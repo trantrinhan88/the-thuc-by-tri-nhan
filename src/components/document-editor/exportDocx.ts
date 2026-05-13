@@ -1,7 +1,7 @@
 import {
   Document, Packer, Paragraph, TextRun, AlignmentType,
   BorderStyle, Table, TableRow, TableCell, WidthType,
-  LineRuleType, convertInchesToTwip,
+  LineRuleType, convertInchesToTwip, Header, PageNumber,
 } from 'docx'
 import { saveAs } from 'file-saver'
 import { DocumentState } from '@/types'
@@ -39,6 +39,10 @@ function removeVietnameseDiacritics(str: string): string {
     .replace(/\s+/g, ' ')
 }
 
+function isHeadingLine(line: string): boolean {
+  return /^(VII|III|VI|IV|II|I|V|\d+)[.)\s]/i.test(line.trim())
+}
+
 export async function exportDocx(state: DocumentState) {
   const isCongVan = state.docType === 'cong-van'
   const isDeputy = /phó/i.test(state.signPosition)
@@ -69,6 +73,26 @@ export async function exportDocx(state: DocumentState) {
             left: convertInchesToTwip(1.18),
           },
         },
+        titlePage: true,
+      },
+      headers: {
+        default: new Header({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  children: [PageNumber.CURRENT],
+                  font: 'Times New Roman',
+                  size: 28,
+                }),
+              ],
+            }),
+          ],
+        }),
+        first: new Header({
+          children: [new Paragraph({ children: [] })],
+        }),
       },
       children: [
         // Header: Cơ quan (48%) | Quốc hiệu (52%)
@@ -84,7 +108,7 @@ export async function exportDocx(state: DocumentState) {
                   new TextRun({ text: state.agencyUpper, font: 'Times New Roman', size: 24, allCaps: true }),
                 ]}),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: state.agencyMain, font: 'Times New Roman', bold: true, size: 24, allCaps: true }),
+                  new TextRun({ text: state.agencyMain, font: 'Times New Roman', bold: true, size: 24, allCaps: true, characterSpacing: -20 }),
                 ]}),
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
@@ -105,7 +129,7 @@ export async function exportDocx(state: DocumentState) {
               borders: noBorder,
               children: [
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', font: 'Times New Roman', bold: true, size: 24, allCaps: true }),
+                  new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', font: 'Times New Roman', bold: true, size: 24, allCaps: true, characterSpacing: -20 }),
                 ]}),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
                   new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', font: 'Times New Roman', bold: true, size: 26 }),
@@ -155,21 +179,21 @@ export async function exportDocx(state: DocumentState) {
         ...(state.issueStatement ? [new Paragraph({
           alignment: AlignmentType.BOTH,
           indent: bodyIndent,
-          children: [new TextRun({ text: state.issueStatement, font: 'Times New Roman', size: 28 })],
+          children: [new TextRun({ text: state.issueStatement, font: 'Times New Roman', size: 28, bold: isHeadingLine(state.issueStatement) })],
         })] : []),
 
         // Nội dung chính — mỗi dòng là một đoạn riêng
         ...mainContentLines.map(line => new Paragraph({
           alignment: AlignmentType.BOTH,
           indent: bodyIndent,
-          children: [new TextRun({ text: line, font: 'Times New Roman', size: 28 })],
+          children: [new TextRun({ text: line, font: 'Times New Roman', size: 28, bold: isHeadingLine(line) })],
         })),
 
         // Kết luận
         ...(state.conclusion ? [new Paragraph({
           alignment: AlignmentType.BOTH,
           indent: bodyIndent,
-          children: [new TextRun({ text: state.conclusion, font: 'Times New Roman', size: 28 })],
+          children: [new TextRun({ text: state.conclusion, font: 'Times New Roman', size: 28, bold: isHeadingLine(state.conclusion) })],
         })] : []),
 
         emptyLine(),

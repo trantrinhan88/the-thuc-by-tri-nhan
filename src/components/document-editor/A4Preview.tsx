@@ -14,6 +14,9 @@ const addPunctuation = (line: string, isLast: boolean): string => {
   return `${stripped}${expected}`
 }
 
+const isHeadingLine = (line: string): boolean =>
+  /^(VII|III|VI|IV|II|I|V|\d+)[.)\s]/i.test(line.trim())
+
 interface A4PreviewProps {
   state: DocumentState
 }
@@ -138,7 +141,7 @@ export default function A4Preview({ state }: A4PreviewProps) {
 
         {/* Đặt vấn đề */}
         {state.issueStatement && (
-          <div style={{ ...bodyStyle, marginBottom: '0.5rem' }}>
+          <div style={{ ...bodyStyle, marginBottom: '0.5rem', ...(isHeadingLine(state.issueStatement) ? { fontWeight: 'bold' } : {}) }}>
             {state.issueStatement}
           </div>
         )}
@@ -147,14 +150,14 @@ export default function A4Preview({ state }: A4PreviewProps) {
         {mainContentLines.length > 0 && (
           <div style={{ marginBottom: '0.5rem' }}>
             {mainContentLines.map((line, i) => (
-              <div key={i} style={bodyStyle}>{line}</div>
+              <div key={i} style={{ ...bodyStyle, ...(isHeadingLine(line) ? { fontWeight: 'bold' } : {}) }}>{line}</div>
             ))}
           </div>
         )}
 
         {/* Kết luận */}
         {state.conclusion && (
-          <div style={{ ...bodyStyle, marginBottom: '0.5rem' }}>
+          <div style={{ ...bodyStyle, marginBottom: '0.5rem', ...(isHeadingLine(state.conclusion) ? { fontWeight: 'bold' } : {}) }}>
             {state.conclusion}
           </div>
         )}
