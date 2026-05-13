@@ -8,6 +8,12 @@ const DOC_TYPE_TITLES: Record<string, string> = {
   'ke-hoach': 'KẾ HOẠCH',
 }
 
+const addPunctuation = (line: string, isLast: boolean): string => {
+  const expected = isLast ? ',' : ';'
+  const stripped = line.replace(/[;,]\s*$/, '')
+  return `${stripped}${expected}`
+}
+
 interface A4PreviewProps {
   state: DocumentState
 }
@@ -15,11 +21,14 @@ interface A4PreviewProps {
 export default function A4Preview({ state }: A4PreviewProps) {
   const isCongVan = state.docType === 'cong-van'
   const docTypeTitle = DOC_TYPE_TITLES[state.docType]
+  const isDeputy = /phó/i.test(state.signPosition)
 
   const formattedDate = state.date
     ? (() => {
-        const d = new Date(state.date)
-        return `${state.location}, ngày ${d.getDate()} tháng ${d.getMonth() + 1} năm ${d.getFullYear()}`
+        const d = new Date(state.date + 'T00:00:00')
+        const day = String(d.getDate()).padStart(2, '0')
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        return `${state.location}, ngày ${day} tháng ${month} năm ${d.getFullYear()}`
       })()
     : `${state.location}, ngày ... tháng ... năm ...`
 
@@ -32,6 +41,16 @@ export default function A4Preview({ state }: A4PreviewProps) {
     .split('\n')
     .map(l => l.trim())
     .filter(Boolean)
+
+  const mainContentLines = state.mainContent
+    .split('\n')
+    .filter(l => l.trim())
+
+  const bodyStyle: React.CSSProperties = {
+    marginBottom: '5pt',
+    textIndent: '1.27cm',
+    textAlign: 'justify',
+  }
 
   return (
     <div
@@ -50,7 +69,7 @@ export default function A4Preview({ state }: A4PreviewProps) {
     >
       {/* Document Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.8rem' }}>
-        {/* Left: Cơ quan */}
+        {/* Cột trái 48%: Cơ quan */}
         <div style={{ width: '48%', textAlign: 'center' }}>
           <div style={{ fontSize: '12pt', textTransform: 'uppercase' }}>{state.agencyUpper}</div>
           <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>
@@ -58,24 +77,21 @@ export default function A4Preview({ state }: A4PreviewProps) {
           </div>
           <div style={{ width: '45%', height: '1px', background: 'black', margin: '3px auto 5px' }} />
           <div style={{ fontSize: '13pt' }}>
-            Số: {state.docNumber || '...'}/{state.agencyMain.split(' ').pop()}
+            Số: {state.docNumber || '...'}
           </div>
           {isCongVan && (
             <div style={{ fontSize: '13pt', textAlign: 'center', marginTop: '4pt' }}>
-              <span>V/v </span><span>{state.docSummary || '...'}</span>
+              V/v {state.docSummary || '...'}
             </div>
           )}
         </div>
 
-        {/* Right: Quốc hiệu */}
+        {/* Cột phải 48%: Quốc hiệu */}
         <div style={{ width: '48%', textAlign: 'center' }}>
           <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
             CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
           </div>
-          <div style={{
-            fontSize: '13pt', fontWeight: 'bold',
-            display: 'inline-block', borderBottom: '1px solid black'
-          }}>
+          <div style={{ fontSize: '13pt', fontWeight: 'bold', display: 'inline-block', borderBottom: '1px solid black' }}>
             Độc lập - Tự do - Hạnh phúc
           </div>
           <div style={{ fontSize: '13pt', fontStyle: 'italic', whiteSpace: 'nowrap', marginTop: '4pt' }}>
@@ -84,12 +100,11 @@ export default function A4Preview({ state }: A4PreviewProps) {
         </div>
       </div>
 
-      {/* Recipient / Doc type title */}
+      {/* Kính gửi / Tên loại văn bản */}
       <div style={{ marginBottom: '0.9rem' }}>
         {isCongVan ? (
           <div style={{ fontSize: '14pt', textAlign: 'center' }}>
-            <span style={{ fontWeight: 'bold' }}>Kính gửi: </span>
-            <span>{state.recipient || '...'}</span>
+            Kính gửi: {state.recipient || '...'}
           </div>
         ) : (
           <div style={{ textAlign: 'center' }}>
@@ -106,14 +121,14 @@ export default function A4Preview({ state }: A4PreviewProps) {
         )}
       </div>
 
-      {/* Document Body */}
-      <div style={{ minHeight: '80mm' }}>
+      {/* Nội dung văn bản */}
+      <div style={{ minHeight: '80mm', lineHeight: '1.5' }}>
         {/* Căn cứ pháp lý */}
         {legalBasisLines.length > 0 && (
           <div style={{ marginBottom: '0.5rem' }}>
             {legalBasisLines.map((line, i) => (
-              <div key={i} style={{ marginBottom: '4pt' }}>
-                - Căn cứ {line};
+              <div key={i} style={bodyStyle}>
+                {addPunctuation(`- Căn cứ ${line}`, i === legalBasisLines.length - 1)}
               </div>
             ))}
           </div>
@@ -121,21 +136,23 @@ export default function A4Preview({ state }: A4PreviewProps) {
 
         {/* Đặt vấn đề */}
         {state.issueStatement && (
-          <div style={{ marginBottom: '0.5rem', textIndent: '1.5cm' }}>
+          <div style={{ ...bodyStyle, marginBottom: '0.5rem' }}>
             {state.issueStatement}
           </div>
         )}
 
-        {/* Nội dung chính */}
-        {state.mainContent && (
-          <div style={{ marginBottom: '0.5rem', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-            {state.mainContent}
+        {/* Nội dung chính — mỗi dòng là một đoạn riêng */}
+        {mainContentLines.length > 0 && (
+          <div style={{ marginBottom: '0.5rem' }}>
+            {mainContentLines.map((line, i) => (
+              <div key={i} style={bodyStyle}>{line}</div>
+            ))}
           </div>
         )}
 
         {/* Kết luận */}
         {state.conclusion && (
-          <div style={{ marginBottom: '0.5rem', textIndent: '1.5cm' }}>
+          <div style={{ ...bodyStyle, marginBottom: '0.5rem' }}>
             {state.conclusion}
           </div>
         )}
@@ -143,15 +160,23 @@ export default function A4Preview({ state }: A4PreviewProps) {
 
       {/* Footer: Nơi nhận + Chữ ký */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
-        <div style={{ width: '45%' }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '4pt' }}>Nơi nhận:</div>
+        {/* Nơi nhận: 12pt, đậm, nghiêng, gạch chân */}
+        <div style={{ width: '42%' }}>
+          <div style={{ fontSize: '12pt', fontWeight: 'bold', fontStyle: 'italic', textDecoration: 'underline', marginBottom: '4pt' }}>
+            Nơi nhận:
+          </div>
           {recipientsCcLines.map((line, i) => (
-            <div key={i} style={{ fontSize: '12pt' }}>{line}</div>
+            <div key={i} style={{ fontSize: '11pt' }}>{line}</div>
           ))}
         </div>
-        <div style={{ width: '45%', textAlign: 'center' }}>
+
+        {/* Chữ ký */}
+        <div style={{ width: '50%', textAlign: 'center' }}>
+          {isDeputy && (
+            <div style={{ fontSize: '13pt', fontWeight: 'bold', textTransform: 'uppercase' }}>KT. GIÁM ĐỐC</div>
+          )}
           <div style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>{state.signPosition}</div>
-          <div style={{ height: '55pt' }} />
+          <div style={{ height: '90px' }} />
           <div style={{ fontWeight: 'bold' }}>{state.signName}</div>
         </div>
       </div>

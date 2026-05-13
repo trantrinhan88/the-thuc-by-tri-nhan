@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thể thức văn bản – Nghị định 30</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a56b0;
+            --primary-hover: #1345a0;
+            --accent: #e8f0fe;
+            --sidebar-bg: #f7f8fc;
+            --workspace-bg: #dde3ee;
+            --text-main: #1a1f36;
+            --text-muted: #6b7597;
+            --border: #dde1ef;
+            --input-bg: #ffffff;
+            --section-title: #7b8abf;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background: var(--workspace-bg);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .app-container { display: flex; height: 100vh; }
+
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            width: 420px;
+            min-width: 420px;
+            background: var(--sidebar-bg);
+            border-right: 1.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 3px 0 18px rgba(26,86,176,0.07);
+        }
+
+        .sidebar-header {
+            padding: 1.2rem 1.5rem 1rem;
+            background: var(--primary);
+            color: white;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+
+        .sidebar-header p {
+            font-size: 0.78rem;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.2rem 1.25rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar { width: 5px; }
+        .sidebar-content::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+        .input-group {
+            margin-bottom: 1.6rem;
+        }
+
+        .input-group h2 {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--section-title);
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.45rem;
+            border-bottom: 1.5px solid var(--border);
+        }
+
+        .field { margin-bottom: 0.75rem; }
+
+        .field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .field input,
+        .field textarea,
+        .field select {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.855rem;
+            font-family: inherit;
+            background: var(--input-bg);
+            color: var(--text-main);
+            transition: border-color 0.18s, box-shadow 0.18s;
+        }
+
+        .field textarea { resize: vertical; }
+
+        /* Placeholder styling – hiển thị rõ là chữ gợi ý, không phải nội dung thật */
+        .field input::placeholder,
+        .field textarea::placeholder {
+            color: #b0b8d0;
+            font-style: italic;
+            font-size: 0.82rem;
+            opacity: 1; /* Firefox fix */
+        }
+
+        .field input:focus,
+        .field textarea:focus,
+        .field select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26,86,176,0.1);
+        }
+
+        .field-row { display: flex; gap: 10px; }
+        .field-row .field { flex: 1; }
+
+        /* AI section */
+        .ai-section {
+            background: #f0f4ff;
+            border: 1.5px solid #c3d0f5;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .ai-section h2 { color: #3b52bf; border-bottom-color: #c3d0f5; }
+
+        /* Highlight lỗi trên preview */
+        .ai-highlight {
+            background: #fef08a;
+            border-bottom: 2px solid #f59e0b;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .ai-highlight:hover { background: #fde047; }
+        .ai-highlight.ai-highlight-error {
+            background: #fee2e2;
+            border-bottom-color: #ef4444;
+        }
+        .ai-highlight.ai-highlight-error:hover { background: #fecaca; }
+
+        /* Tooltip sửa lỗi */
+        .ai-fix-tooltip {
+            display: none;
+            position: fixed;
+            z-index: 9998;
+            background: #1e293b;
+            color: white;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: 0.8rem;
+            max-width: 300px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .ai-fix-tooltip.visible { display: block; }
+        .ai-fix-tooltip-title { font-weight: 700; color: #fbbf24; margin-bottom: 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .ai-fix-tooltip-desc { color: #cbd5e1; margin-bottom: 7px; line-height: 1.4; }
+        .ai-fix-tooltip-suggestion { background: #0f172a; border-radius: 4px; padding: 5px 8px; color: #86efac; font-style: italic; margin-bottom: 7px; font-size: 0.8rem; line-height: 1.4; }
+        .ai-fix-apply-btn { background: #3b82f6; color: white; border: none; border-radius: 5px; padding: 5px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer; font-family: inherit; width: 100%; transition: background 0.15s; }
+        .ai-fix-apply-btn:hover { background: #2563eb; }
+
+        /* Panel kết quả AI */
+        .ai-result-panel { margin-top: 10px; background: white; border: 1.5px solid #dde4f5; border-radius: 8px; overflow: hidden; }
+        .ai-result-header { background: #f1f5f9; padding: 8px 12px; font-weight: 700; font-size: 0.78rem; color: #475569; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .ai-result-badge { background: #ef4444; color: white; border-radius: 99px; padding: 1px 8px; font-size: 0.72rem; font-weight: 700; }
+        .ai-result-badge.ok { background: #10b981; }
+        .ai-issue-list { max-height: 260px; overflow-y: auto; padding: 6px; }
+        .ai-issue-item { display: flex; gap: 8px; align-items: flex-start; padding: 7px 8px; border-radius: 6px; margin-bottom: 4px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; font-size: 0.8rem; }
+        .ai-issue-item:hover { background: #f0f4ff; border-color: #c7d2fe; }
+        .ai-issue-item.active { background: #eff6ff; border-color: #3b82f6; }
+        .ai-issue-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+        .ai-issue-body { flex: 1; min-width: 0; }
+        .ai-issue-field { font-weight: 700; color: #374151; margin-bottom: 2px; }
+        .ai-issue-desc { color: #6b7280; line-height: 1.35; }
+        .ai-apply-inline-btn { flex-shrink: 0; background: #10b981; color: white; border: none; border-radius: 5px; padding: 3px 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer; font-family: inherit; align-self: center; transition: background 0.15s; white-space: nowrap; }
+        .ai-apply-inline-btn:hover { background: #059669; }
+        .ai-apply-all-btn { width: 100%; background: #6366f1; color: white; border: none; padding: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit; border-top: 1px solid #e2e8f0; transition: background 0.15s; }
+        .ai-apply-all-btn:hover { background: #4f46e5; }
+
+        /* ========== BUTTONS ========== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0.6rem 0.9rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.83rem;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            transition: all 0.18s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-save { background: var(--warning); color: white; }
+        .btn-save:hover { background: #d97706; }
+
+        .btn-load { background: #64748b; color: white; }
+        .btn-load:hover { background: #475569; }
+
+        .btn-new { background: #ec4899; color: white; }
+        .btn-new:hover { background: #db2777; }
+
+        .btn-history { background: #8b5cf6; color: white; }
+        .btn-history:hover { background: #7c3aed; }
+
+        .btn-ai { background: #6366f1; color: white; width: 100%; }
+        .btn-ai:hover { background: #4f46e5; }
+
+        /* ========== VERSION HISTORY MODAL ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 480px;
+            max-width: 96vw;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+            overflow: hidden;
+            animation: modalIn .2s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes modalIn { from { transform: scale(.92); opacity:0; } to { transform: scale(1); opacity:1; } }
+        .modal-header {
+            padding: 1rem 1.25rem;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h2 { font-size: 1rem; font-weight: 700; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+            line-height: 1;
+            opacity: .85;
+        }
+        .modal-close:hover { opacity: 1; }
+        .modal-body { flex: 1; overflow-y: auto; padding: 0.9rem 1.25rem; }
+        .version-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.7rem 0.85rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .version-item:hover { border-color: var(--primary); background: var(--accent); }
+        .version-meta { flex: 1; min-width: 0; }
+        .version-time { font-size: .8rem; font-weight: 700; color: var(--text-main); }
+        .version-desc { font-size: .74rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .version-load-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: .75rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: background .15s;
+        }
+        .version-load-btn:hover { background: var(--primary-hover); }
+        .version-delete-btn {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: .75rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: background .15s;
+        }
+        .version-delete-btn:hover { background: #fecaca; }
+        .modal-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-size: .88rem; }
+
+        .sidebar-footer {
+            padding: 0.9rem 1.25rem;
+            border-top: 1.5px solid var(--border);
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .footer-row { display: flex; gap: 8px; }
+        .footer-row .btn { flex: 1; }
+
+        /* ========== WORKSPACE ========== */
+        .workspace {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2.5rem 2rem;
+            display: flex;
+            justify-content: center;
+            background: radial-gradient(ellipse at 60% 40%, #d6ddf0 0%, #c8d0e8 100%);
+        }
+
+        /* ========== DOCUMENT PAGE ========== */
+        .document-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
+            padding: 20mm 15mm 20mm 30mm;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 14pt;
+            line-height: 1.35;
+            color: #000;
+            position: relative;
+            border-radius: 2px;
+        }
+
+        /* Header */
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.8rem;
+        }
+
+        .header-left, .header-right {
+            width: 48%;
+            text-align: center;
+        }
+
+        .agency-upper { font-size: 12pt; text-transform: uppercase; }
+
+        .agency-main {
+            font-size: 12pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .header-divider-left {
+            width: 45%;
+            height: 1px;
+            background: black;
+            margin: 3px auto 5px;
+        }
+
+        .doc-number { font-size: 13pt; }
+
+        .doc-summary-group {
+            font-size: 13pt;
+            text-align: center;
+            margin-top: 4pt;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Trích yếu loại không phải Công văn – căn giữa trong vùng nội dung */
+        #recipient-other {
+            text-align: center;
+            margin-bottom: 0.9rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        #preview-doc-summary-other {
+            font-size: 14pt;
+            margin-top: 4pt;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .national-title {
+            font-size: 12pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .national-motto {
+            font-size: 13pt;
+            font-weight: bold;
+            display: inline-block;
+            border-bottom: 1px solid black;
+        }
+
+        .location-date {
+            font-size: 13pt;
+            font-style: italic;
+            white-space: nowrap;
+            margin-top: 4pt;
+        }
+
+        /* Content */
+        .document-recipient {
+            font-size: 14pt;
+            margin-bottom: 0.9rem;
+            text-align: center;
+        }
+
+        .document-content {
+            min-height: 80mm;
+            text-align: justify;
+            font-size: 14pt;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .document-content p {
+            text-indent: 1.27cm;
+            margin: 0 0 5pt;
+        }
+
+        .legal-basis-section { font-style: normal; }
+        .legal-basis-section p { font-style: normal !important; }
+
+        .issue-statement-section { text-indent: 1.27cm; margin-bottom: 5pt; }
+        .conclusion-section { text-indent: 1.27cm; margin-bottom: 5pt; }
+
+        /* Footer */
+        .document-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2.5rem;
+        }
+
+        .footer-left { width: 42%; }
+
+        .recipients-label {
+            font-weight: bold;
+            font-style: italic;
+            font-size: 12pt;
+            text-decoration: underline;
+        }
+
+        .recipients-list { font-size: 11pt; margin-top: 3pt; }
+
+        .footer-right {
+            width: 50%;
+            text-align: center;
+        }
+
+        .sign-position { font-weight: bold; text-transform: uppercase; font-size: 14pt; }
+        .signature-space { height: 90px; }
+        .sign-name { font-weight: bold; font-size: 14pt; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.7rem 1.4rem;
+            border-radius: 6px;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            z-index: 9999;
+            transition: bottom 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+            pointer-events: none;
+        }
+
+        .toast.show { bottom: 1.8rem; }
+        .toast-success { background: var(--success); }
+        .toast-warning { background: var(--warning); }
+        .toast-error { background: var(--danger); }
+
+        .ai-provider-btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1.5px solid #dde1ef;
+            background: #fff;
+            font-size: .74rem;
+            font-weight: 700;
+            color: #6b7597;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all .15s;
+        }
+        .ai-provider-btn:hover { border-color: #a5b4fc; color: #4f46e5; }
+        .ai-provider-btn.active { border-color: #6366f1; background: #eff6ff; color: #4338ca; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        @media print {
+            body { background: white; }
+            .sidebar { display: none; }
+            .workspace { padding: 0; background: none; }
+            .document-page { box-shadow: none; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <header class="sidebar-header">
+            <h1>📄 Thể thức văn bản</h1>
+            <p>Soạn thảo tự động – Chuẩn Nghị định 30/2020/NĐ-CP</p>
+        </header>
+
+        <div class="sidebar-content">
+
+            <!-- 1. Thông tin cơ quan -->
+            <section class="input-group">
+                <h2>1. Thông tin cơ quan &amp; Tiêu đề</h2>
+                <div class="field">
+                    <label for="agency-upper">Cơ quan chủ quản</label>
+                    <input type="text" id="agency-upper" value="BẢO HIỂM XÃ HỘI TỈNH ĐỒNG THÁP">
+                </div>
+                <div class="field">
+                    <label for="agency-main">Cơ quan ban hành</label>
+                    <select id="agency-main">
+                        <option value="BẢO HIỂM XÃ HỘI CƠ SỞ CAO LÃNH">Bảo hiểm xã hội cơ sở Cao Lãnh</option>
+                        <option value="BẢO HIỂM XÃ HỘI CƠ SỞ THÁP MƯỜI">Bảo hiểm xã hội cơ sở Tháp Mười</option>
+                        <option value="BẢO HIỂM XÃ HỘI CƠ SỞ TAM NÔNG">Bảo hiểm xã hội cơ sở Tam Nông</option>
+                        <option value="BẢO HIỂM XÃ HỘI CƠ SỞ THANH BÌNH">Bảo hiểm xã hội cơ sở Thanh Bình</option>
+                    </select>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="doc-number">Số, ký hiệu</label>
+                        <input type="text" id="doc-number">
+                    </div>
+                    <div class="field">
+                        <label for="location">Địa danh</label>
+                        <input type="text" id="location">
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="date">Ngày tháng năm</label>
+                    <input type="date" id="date">
+                </div>
+            </section>
+
+            <!-- 1b. Thể loại văn bản -->
+            <section class="input-group">
+                <h2>2. Thể loại &amp; Trích yếu</h2>
+                <div class="field">
+                    <label for="doc-type">Thể loại văn bản</label>
+                    <select id="doc-type">
+                        <option value="cong-van">Công Văn</option>
+                        <option value="bao-cao">Báo cáo</option>
+                        <option value="thong-bao">Thông báo</option>
+                        <option value="ke-hoach">Kế hoạch</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="doc-summary">Trích yếu nội dung</label>
+                    <textarea id="doc-summary" rows="2"></textarea>
+                </div>
+                <div class="field" id="recipient-field">
+                    <label for="recipient-main" id="recipient-label">Kính gửi</label>
+                    <input type="text" id="recipient-main">
+                </div>
+            </section>
+
+            <!-- 3. Căn cứ -->
+            <section class="input-group">
+                <h2>3. Căn cứ &amp; Đặt vấn đề</h2>
+                <div class="field">
+                    <label for="legal-basis">Các căn cứ pháp lý (mỗi dòng 1 căn cứ)</label>
+                    <textarea id="legal-basis" rows="4"></textarea>
+                </div>
+                <div class="field">
+                    <label for="issue-statement">Câu đặt vấn đề</label>
+                    <textarea id="issue-statement" rows="3"></textarea>
+                </div>
+            </section>
+
+            <!-- 4. Nội dung -->
+            <section class="input-group">
+                <h2>4. Nội dung chính công văn</h2>
+                <div class="field">
+                    <textarea id="main-content" rows="6"></textarea>
+                </div>
+            </section>
+
+            <!-- 5. Kết luận -->
+            <section class="input-group">
+                <h2>5. Kết luận &amp; Chữ ký</h2>
+                <div class="field">
+                    <label for="conclusion">Kết luận / Yêu cầu</label>
+                    <textarea id="conclusion" rows="2"></textarea>
+                </div>
+                <div class="field-row">
+                    <div class="field">
+                        <label for="sign-position">Chức vụ người ký</label>
+                        <select id="sign-position">
+                            <option value="GIÁM ĐỐC">Giám đốc</option>
+                            <option value="PHÓ GIÁM ĐỐC">Phó Giám đốc</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="sign-name">Họ và tên</label>
+                        <select id="sign-name"></select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="recipients-cc">Nơi nhận (phần cuối)</label>
+                    <textarea id="recipients-cc" rows="3"></textarea>
+                </div>
+            </section>
+
+            <!-- 6. AI -->
+            <section class="input-group ai-section">
+                <h2>6. Kiểm tra lỗi thể thức (AI)</h2>
+
+                <!-- Chọn provider -->
+                <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
+                    <button class="ai-provider-btn active" id="provider-deepseek" onclick="selectProvider('deepseek')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                        DeepSeek
+                    </button>
+                    <button class="ai-provider-btn" id="provider-openai" onclick="selectProvider('openai')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4v8l4 2"/></svg>
+                        OpenAI
+                    </button>
+                    <button class="ai-provider-btn" id="provider-gemini" onclick="selectProvider('gemini')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        Gemini
+                    </button>
+                    <button class="ai-provider-btn" id="provider-anthropic" onclick="selectProvider('anthropic')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        Claude
+                    </button>
+                </div>
+
+                <!-- Deepseek key panel -->
+                <div id="deepseek-panel">
+                    <div class="field">
+                        <label for="deepseek-key">Deepseek API Key</label>
+                        <div style="display:flex;gap:6px;">
+                            <input type="password" id="deepseek-key" placeholder="sk-..." style="flex:1;">
+                            <button onclick="saveDeepseekKey()" style="background:#6366f1;color:#fff;border:none;border-radius:6px;padding:0 12px;font-size:.76rem;font-weight:700;cursor:pointer;white-space:nowrap;">Lưu</button>
+                        </div>
+                    </div>
+                    <div id="deepseek-key-status" style="display:none;font-size:.73rem;padding:4px 8px;border-radius:4px;margin-bottom:8px;"></div>
+                    <p style="font-size:.73rem;color:#6b7597;margin-bottom:10px;line-height:1.5;">Key được lưu cục bộ trên trình duyệt, không gửi đi đâu khác. Lấy key tại <a href="https://platform.deepseek.com" target="_blank" style="color:#6366f1;">platform.deepseek.com</a></p>
+                </div>
+
+                <!-- OpenAI panel -->
+                <div id="openai-panel" style="display:none;">
+                    <div class="field">
+                        <label for="openai-key">OpenAI API Key</label>
+                        <div style="display:flex;gap:6px;">
+                            <input type="password" id="openai-key" placeholder="sk-..." style="flex:1;">
+                            <button onclick="saveOpenAIKey()" style="background:#10a37f;color:#fff;border:none;border-radius:6px;padding:0 12px;font-size:.76rem;font-weight:700;cursor:pointer;white-space:nowrap;">Lưu</button>
+                        </div>
+                    </div>
+                    <div id="openai-key-status" style="display:none;font-size:.73rem;padding:4px 8px;border-radius:4px;margin-bottom:8px;"></div>
+                    <p style="font-size:.73rem;color:#6b7597;margin-bottom:10px;line-height:1.5;">Key lưu cục bộ, không gửi đi nơi nào khác. Lấy key tại <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#10a37f;">platform.openai.com</a></p>
+                </div>
+
+                <!-- Gemini panel -->
+                <div id="gemini-panel" style="display:none;">
+                    <div class="field">
+                        <label for="gemini-key">Google Gemini API Key</label>
+                        <div style="display:flex;gap:6px;">
+                            <input type="password" id="gemini-key" placeholder="AIza..." style="flex:1;">
+                            <button onclick="saveGeminiKey()" style="background:#4285f4;color:#fff;border:none;border-radius:6px;padding:0 12px;font-size:.76rem;font-weight:700;cursor:pointer;white-space:nowrap;">Lưu</button>
+                        </div>
+                    </div>
+                    <div id="gemini-key-status" style="display:none;font-size:.73rem;padding:4px 8px;border-radius:4px;margin-bottom:8px;"></div>
+                    <p style="font-size:.73rem;color:#6b7597;margin-bottom:10px;line-height:1.5;">Key lưu cục bộ, không gửi đi nơi nào khác. Lấy key tại <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#4285f4;">aistudio.google.com</a></p>
+                </div>
+
+                <!-- Anthropic panel -->
+                <div id="anthropic-panel" style="display:none;">
+                    <p style="font-size:.73rem;color:#6b7597;margin-bottom:10px;line-height:1.5;">Sử dụng Claude AI tích hợp sẵn — chỉ hoạt động khi mở file này trong <strong>claude.ai</strong>. Không cần nhập key.</p>
+                </div>
+
+                <button id="ai-check-btn" class="btn btn-ai" style="margin-bottom:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span id="ai-btn-text">Kiểm tra lỗi &amp; Thể thức</span>
+                </button>
+                <div id="ai-result-panel" class="ai-result-panel" style="display:none;">
+                    <div class="ai-result-header">
+                        <span>Kết quả kiểm tra</span>
+                        <span id="ai-result-badge" class="ai-result-badge">0 lỗi</span>
+                    </div>
+                    <div id="ai-issue-list" class="ai-issue-list"></div>
+                    <button id="ai-apply-all-btn" class="ai-apply-all-btn" style="display:none;">✨ Áp dụng tất cả gợi ý</button>
+                </div>
+            </section>
+
+        </div><!-- /sidebar-content -->
+
+        <footer class="sidebar-footer">
+            <div class="footer-row">
+                <button id="new-btn" class="btn btn-new" style="flex:1;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Văn bản mới
+                </button>
+                <button id="history-btn" class="btn btn-history" style="flex:1;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Lịch sử
+                </button>
+            </div>
+            <div class="footer-row">
+                <button id="save-btn" class="btn btn-save">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Lưu phiên bản
+                </button>
+                <button id="load-btn" class="btn btn-load">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Tải mới nhất
+                </button>
+            </div>
+            <div class="footer-row">
+                <button id="export-docx-btn" class="btn btn-primary" style="background:#10b981; flex:1;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Xuất DOCX
+                </button>
+            </div>
+        </footer>
+    </aside>
+
+    <!-- ===== WORKSPACE ===== -->
+    <main class="workspace">
+        <div id="a4-page" class="document-page">
+            <div class="document-header">
+                <div class="header-left">
+                    <div id="preview-agency-upper" class="agency-upper">BẢO HIỂM XÃ HỘI TỈNH ĐỒNG THÁP</div>
+                    <div id="preview-agency-main" class="agency-main">BẢO HIỂM XÃ HỘI CƠ SỞ CAO LÃNH</div>
+                    <div class="header-divider-left"></div>
+                    <div id="preview-doc-number" class="doc-number">Số: .../BHXH-CL</div>
+                    <!-- Công văn: V/v ở đây; các loại khác: ẩn -->
+                    <div id="doc-summary-congvan" class="doc-summary-group">
+                        <span class="doc-type-vv">V/v </span><span id="preview-doc-summary">...</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="national-title">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                    <div class="national-motto">Độc lập - Tự do - Hạnh phúc</div>
+                    <div id="preview-date-location" class="location-date">Cao Lãnh, ngày ... tháng ... năm ...</div>
+                </div>
+            </div>
+
+            <!-- Kính gửi (Công Văn) hoặc tên loại + trích yếu (các loại khác) -->
+            <div id="doc-recipient-area">
+                <!-- Công Văn -->
+                <div id="recipient-congvan" class="document-recipient">
+                    <span class="recipient-label">Kính gửi:</span>
+                    <span id="preview-recipient-main">...</span>
+                </div>
+                <!-- Báo cáo / Thông báo / Kế hoạch -->
+                <div id="recipient-other" style="display:none;">
+                    <div id="preview-doc-type-title" style="font-size:16pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px;"></div>
+                    <div id="preview-doc-summary-other" style="font-size:14pt; margin-top:4pt; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:break-word;"></div>
+                    <div id="preview-doc-summary-underline" style="height:1px; background:#000; width:4cm; margin:3pt auto 0;"></div>
+                </div>
+            </div>
+
+            <div id="document-content" class="document-content">
+                <div id="preview-legal-basis" class="legal-basis-section"></div>
+                <div id="preview-issue-statement" class="issue-statement-section"></div>
+                <div id="preview-main-body" class="main-body-section"></div>
+                <div id="preview-conclusion" class="conclusion-section"></div>
+            </div>
+
+            <div class="document-footer">
+                <div class="footer-left">
+                    <div class="recipients-label">Nơi nhận:</div>
+                    <div id="preview-recipients-cc" class="recipients-list">- Như trên;<br>- Lưu: VT.</div>
+                </div>
+                <div id="footer-right-sig" class="footer-right">
+                    <div class="sign-position">GIÁM ĐỐC</div>
+                    <div class="signature-space"></div>
+                    <div id="preview-sign-name" class="sign-name"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ===== VERSION HISTORY MODAL ===== -->
+<div id="history-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Lịch sử phiên bản">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>🕐 Lịch sử phiên bản</h2>
+            <button class="modal-close" id="modal-close-btn" aria-label="Đóng">✕</button>
+        </div>
+        <div class="modal-body" id="history-list">
+            <div class="modal-empty">Chưa có phiên bản nào được lưu.</div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" aria-live="polite"></div>
+<div id="ai-fix-tooltip" class="ai-fix-tooltip">
+    <div class="ai-fix-tooltip-title" id="tooltip-title"></div>
+    <div class="ai-fix-tooltip-desc" id="tooltip-desc"></div>
+    <div class="ai-fix-tooltip-suggestion" id="tooltip-suggestion"></div>
+    <button class="ai-fix-apply-btn" id="tooltip-apply-btn">✓ Áp dụng sửa lỗi này</button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const fields = {
+        agencyUpper:    document.getElementById('agency-upper'),
+        agencyMain:     document.getElementById('agency-main'),
+        docNumber:      document.getElementById('doc-number'),
+        location:       document.getElementById('location'),
+        date:           document.getElementById('date'),
+        docType:        document.getElementById('doc-type'),
+        docSummary:     document.getElementById('doc-summary'),
+        recipientMain:  document.getElementById('recipient-main'),
+        legalBasis:     document.getElementById('legal-basis'),
+        issueStatement: document.getElementById('issue-statement'),
+        mainContent:    document.getElementById('main-content'),
+        conclusion:     document.getElementById('conclusion'),
+        signPosition:   document.getElementById('sign-position'),
+        signName:       document.getElementById('sign-name'),
+        recipientsCc:   document.getElementById('recipients-cc')
+    };
+
+    const DOC_TYPE_LABELS = {
+        'cong-van':  null,
+        'bao-cao':   'BÁO CÁO',
+        'thong-bao': 'THÔNG BÁO',
+        'ke-hoach':  'KẾ HOẠCH'
+    };
+
+    const agencyData = {
+        "BẢO HIỂM XÃ HỘI CƠ SỞ CAO LÃNH": {
+            location: "Cao Lãnh", symbol: ".../BHXH-CL",
+            signatories: { "GIÁM ĐỐC": ["Đoàn Văn Đông"], "PHÓ GIÁM ĐỐC": ["Nguyễn Văn Sáu","Nguyễn Hoàng Hoa"] }
+        },
+        "BẢO HIỂM XÃ HỘI CƠ SỞ THÁP MƯỜI": {
+            location: "Tháp Mười", symbol: ".../BHXH-TM",
+            signatories: { "GIÁM ĐỐC": ["Phạm Hiếu Nghĩa"], "PHÓ GIÁM ĐỐC": ["Bùi Ngọc Hiếu"] }
+        },
+        "BẢO HIỂM XÃ HỘI CƠ SỞ THANH BÌNH": {
+            location: "Thanh Bình", symbol: ".../BHXH-TB",
+            signatories: { "GIÁM ĐỐC": ["Nguyễn Văn Xuân"], "PHÓ GIÁM ĐỐC": ["Võ Sĩ Nguyên"] }
+        },
+        "BẢO HIỂM XÃ HỘI CƠ SỞ TAM NÔNG": {
+            location: "Tam Nông", symbol: ".../BHXH-TN",
+            signatories: { "GIÁM ĐỐC": ["Lê Văn Thức"], "PHÓ GIÁM ĐỐC": ["Nguyễn Văn Nguyên"] }
+        }
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'ngày ... tháng ... năm ...';
+        const d = new Date(dateStr + 'T00:00:00');
+        return `ngày ${String(d.getDate()).padStart(2,'0')} tháng ${String(d.getMonth()+1).padStart(2,'0')} năm ${d.getFullYear()}`;
+    };
+
+    const removeVietnameseTones = (str) => {
+        str = str.replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g,'a').replace(/[èéẹẻẽêềếệểễ]/g,'e')
+            .replace(/[ìíịỉĩ]/g,'i').replace(/[òóọỏõôồốộổỗơờớợởỡ]/g,'o')
+            .replace(/[ùúụủũưừứựửữ]/g,'u').replace(/[ỳýỵỷỹ]/g,'y').replace(/đ/g,'d')
+            .replace(/[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]/g,'A').replace(/[ÈÉẸẺẼÊỀẾỆỂỄ]/g,'E')
+            .replace(/[ÌÍỊỈĨ]/g,'I').replace(/[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]/g,'O')
+            .replace(/[ÙÚỤỦŨƯỪỨỰỬỮ]/g,'U').replace(/[ỲÝỴỶỸ]/g,'Y').replace(/Đ/g,'D')
+            .replace(/[\u0300\u0301\u0303\u0309\u0323\u02C6\u0306\u031B]/g,'').trim()
+            .replace(/[!@%^*()+<>?,.:;'"&#[\]~$`\-{}|\\/ ]+/g,'_').toLowerCase();
+        return str.replace(/_+/g,'_').replace(/^_|_$/g,'');
+    };
+
+    const showToast = (msg, type = 'success') => {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast toast-${type} show`;
+        setTimeout(() => { t.className = 'toast'; }, 3000);
+    };
+
+    const updateSignatories = () => {
+        const agency = fields.agencyMain.value;
+        const pos = fields.signPosition.value;
+        const data = agencyData[agency];
+        fields.signName.innerHTML = '';
+        if (data && data.signatories[pos]) {
+            data.signatories[pos].forEach(name => {
+                const o = document.createElement('option');
+                o.value = o.textContent = name;
+                fields.signName.appendChild(o);
+            });
+        }
+    };
+
+    const updateAgencyLogic = () => {
+        const d = agencyData[fields.agencyMain.value];
+        if (d) {
+            fields.location.value = d.location;
+            fields.docNumber.value = d.symbol;
+        }
+        updateSignatories();
+        updatePreview();
+    };
+
+    const updatePreview = () => {
+        const docType = fields.docType.value;
+        const isCongVan = docType === 'cong-van';
+        const docTypeLabel = DOC_TYPE_LABELS[docType];
+
+        // Cập nhật label sidebar
+        const recipientLabel = document.getElementById('recipient-label');
+        const recipientField = document.getElementById('recipient-field');
+        if (isCongVan) {
+            recipientLabel.textContent = 'Kính gửi';
+            recipientField.style.display = '';
+        } else {
+            recipientLabel.textContent = 'Kính gửi (không bắt buộc)';
+            recipientField.style.display = 'none';
+        }
+
+        // Toggle header trích yếu
+        document.getElementById('doc-summary-congvan').style.display = isCongVan ? '' : 'none';
+
+        // Toggle recipient area
+        document.getElementById('recipient-congvan').style.display = isCongVan ? '' : 'none';
+        document.getElementById('recipient-other').style.display = isCongVan ? 'none' : '';
+
+        if (!isCongVan && docTypeLabel) {
+            document.getElementById('preview-doc-type-title').textContent = docTypeLabel;
+            document.getElementById('preview-doc-summary-other').textContent = fields.docSummary.value || '';
+        }
+
+        document.getElementById('preview-agency-upper').textContent = fields.agencyUpper.value || 'CƠ QUAN CHỦ QUẢN';
+        document.getElementById('preview-agency-main').textContent = fields.agencyMain.value || 'CƠ QUAN BAN HÀNH';
+        document.getElementById('preview-doc-number').textContent = fields.docNumber.value ? `Số: ${fields.docNumber.value}` : 'Số: .../BHXH-...';
+        document.getElementById('preview-date-location').textContent = `${fields.location.value || '...'}, ${formatDate(fields.date.value)}`;
+        document.getElementById('preview-doc-summary').textContent = fields.docSummary.value || '...';
+        document.getElementById('preview-recipient-main').textContent = fields.recipientMain.value || '...';
+
+        // Legal basis – chuẩn NĐ30: không nghiêng, không thụt lề, tự thêm dấu câu cuối dòng
+        const basis = fields.legalBasis.value.split('\n').filter(l => l.trim());
+        const basisHtml = basis.map((l, i) => {
+            let line = l.trimEnd();
+            const last = /[;,\.]$/.test(line);
+            if (!last) line += (i < basis.length - 1) ? ';' : ',';
+            return `<p style="font-style:normal;">${line}</p>`;
+        }).join('');
+        document.getElementById('preview-legal-basis').innerHTML = basisHtml;
+
+        // Issue statement
+        document.getElementById('preview-issue-statement').textContent = fields.issueStatement.value;
+
+        // Main content
+        const main = fields.mainContent.value.split('\n').filter(l => l.trim());
+        document.getElementById('preview-main-body').innerHTML = main.map(l => `<p>${l}</p>`).join('');
+
+        // Conclusion
+        document.getElementById('preview-conclusion').textContent = fields.conclusion.value;
+
+        // Signature
+        const pos = fields.signPosition.value || 'GIÁM ĐỐC';
+        const name = fields.signName.value || '';
+        let sigHtml = '';
+        if (pos.trim().toUpperCase() === 'PHÓ GIÁM ĐỐC') {
+            sigHtml += '<div class="sign-position" style="font-size:13pt;">KT. GIÁM ĐỐC</div>';
+        }
+        sigHtml += `<div class="sign-position">${pos}</div>`;
+        sigHtml += '<div class="signature-space"></div>';
+        sigHtml += `<div class="sign-name">${name}</div>`;
+        document.getElementById('footer-right-sig').innerHTML = sigHtml;
+
+        // CC
+        const cc = fields.recipientsCc.value.split('\n').filter(l => l.trim());
+        document.getElementById('preview-recipients-cc').innerHTML = cc.join('<br>') || '- Như trên;<br>- Lưu: VT.';
+    };
+
+    // ===== VERSION HISTORY =====
+    const VERSION_KEY = 'congvan_version_history';
+    const DRAFT_KEY   = 'congvan_saved_data';
+    const MAX_VERSIONS = 30;
+
+    const getVersions = () => {
+        try { return JSON.parse(localStorage.getItem(VERSION_KEY) || '[]'); } catch { return []; }
+    };
+
+    const collectFormData = () => {
+        const data = {};
+        Object.keys(fields).forEach(k => { data[k] = fields[k].value; });
+        return data;
+    };
+
+    const applyFormData = (data) => {
+        Object.keys(data).forEach(k => { if (fields[k]) fields[k].value = data[k]; });
+        updateAgencyLogic();
+    };
+
+    // Save – lưu phiên bản có timestamp
+    const saveFormData = () => {
+        const data = collectFormData();
+        const ts = new Date().toISOString();
+        const label = data.docSummary ? data.docSummary.slice(0, 60) : '(Không có trích yếu)';
+        const versions = getVersions();
+        versions.unshift({ ts, label, data });
+        if (versions.length > MAX_VERSIONS) versions.length = MAX_VERSIONS;
+        localStorage.setItem(VERSION_KEY, JSON.stringify(versions));
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); // giữ tương thích load cũ
+        showToast('✓ Đã lưu phiên bản!', 'success');
+    };
+
+    // Load – tải phiên bản mới nhất (tương thích cũ)
+    const loadFormData = () => {
+        const versions = getVersions();
+        if (versions.length === 0) {
+            // Fallback sang key cũ
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) { showToast('Chưa có văn bản đã lưu.', 'warning'); return; }
+            applyFormData(JSON.parse(raw));
+            showToast('✓ Đã tải lại văn bản!', 'success');
+            return;
+        }
+        applyFormData(versions[0].data);
+        showToast('✓ Đã tải phiên bản mới nhất!', 'success');
+    };
+
+    // New document – xóa toàn bộ form về mặc định
+    const newDocument = () => {
+        if (!confirm('Tạo văn bản mới? Nội dung hiện tại sẽ bị xóa (bạn có thể Lưu phiên bản trước khi tạo mới).')) return;
+        ['docSummary','recipientMain','legalBasis','issueStatement','mainContent','conclusion','recipientsCc'].forEach(k => { fields[k].value = ''; });
+        fields.docType.value = 'cong-van';
+        fields.signPosition.value = 'GIÁM ĐỐC';
+        fields.date.value = new Date().toISOString().split('T')[0];
+        // Giữ cơ quan hiện tại
+        updateAgencyLogic();
+        showToast('✓ Đã tạo văn bản mới!', 'success');
+    };
+
+    // Format timestamp sang tiếng Việt
+    const fmtTs = (ts) => {
+        const d = new Date(ts);
+        const pad = n => String(n).padStart(2,'0');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    };
+
+    // Render lịch sử
+    const renderHistory = () => {
+        const versions = getVersions();
+        const list = document.getElementById('history-list');
+        if (!versions.length) {
+            list.innerHTML = '<div class="modal-empty">Chưa có phiên bản nào được lưu.<br><small>Nhấn <b>Lưu phiên bản</b> để bắt đầu lưu.</small></div>';
+            return;
+        }
+        list.innerHTML = versions.map((v, i) => `
+            <div class="version-item">
+                <div class="version-meta">
+                    <div class="version-time">🕐 ${fmtTs(v.ts)}</div>
+                    <div class="version-desc" title="${v.label}">${v.label}</div>
+                </div>
+                <button class="version-load-btn" onclick="loadVersion(${i})">Tải lại</button>
+                <button class="version-delete-btn" onclick="deleteVersion(${i})">Xóa</button>
+            </div>
+        `).join('');
+    };
+
+    window.loadVersion = (idx) => {
+        const versions = getVersions();
+        if (!versions[idx]) return;
+        applyFormData(versions[idx].data);
+        document.getElementById('history-modal').classList.remove('open');
+        showToast(`✓ Đã tải phiên bản ${fmtTs(versions[idx].ts)}!`, 'success');
+    };
+
+    window.deleteVersion = (idx) => {
+        const versions = getVersions();
+        if (!versions[idx]) return;
+        if (!confirm(`Xóa phiên bản ${fmtTs(versions[idx].ts)}?`)) return;
+        versions.splice(idx, 1);
+        localStorage.setItem(VERSION_KEY, JSON.stringify(versions));
+        renderHistory();
+        showToast('Đã xóa phiên bản.', 'warning');
+    };
+
+    // ===== DOCX Export =====
+    const exportDocx = () => {
+        try {
+            if (typeof docx === 'undefined') { showToast('❌ Thư viện DOCX chưa tải.', 'error'); return; }
+
+            const {
+                Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+                BorderStyle, WidthType, AlignmentType, UnderlineType, Header, PageNumber
+            } = docx;
+
+            const mmToTwip = mm => Math.round(mm * 56.6929133858);
+
+            const mkPara = (text, opts = {}) => {
+                let spacing;
+                if (opts.isLine)       spacing = { before: 0, after: 0, line: 160, lineRule: "exact" };
+                else if (opts.tight)   spacing = { before: 0, after: 0, line: 240, lineRule: "auto" };
+                else if (opts.spacing) spacing = { after: 120, line: 360, lineRule: "auto" };
+
+                return new Paragraph({
+                    alignment: opts.align || AlignmentType.LEFT,
+                    indent: opts.indent ? { firstLine: mmToTwip(12.7) } : undefined,
+                    spacing,
+                    children: [new TextRun({
+                        text: text != null ? String(text) : '',
+                        font: 'Times New Roman',
+                        size: opts.size || 28,
+                        bold: opts.bold || false,
+                        italics: opts.italics || false,
+                        underline: opts.underline ? { type: UnderlineType.SINGLE } : undefined,
+                        characterSpacing: opts.characterSpacing
+                    })]
+                });
+            };
+
+            const emptyLine = () => new Paragraph({ children: [new TextRun({ text: '', font: 'Times New Roman', size: 28 })] });
+
+            const noBorder = {
+                top:             { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                bottom:          { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                left:            { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                right:           { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                insideHorizontal:{ style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                insideVertical:  { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }
+            };
+
+            const headerTable = new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: noBorder,
+                rows: [new TableRow({ children: [
+                    new TableCell({
+                        width: { size: 48, type: WidthType.PERCENTAGE },
+                        borders: noBorder,
+                        children: [
+                            mkPara(fields.agencyUpper.value || 'CƠ QUAN CHỦ QUẢN', { align: AlignmentType.CENTER, size: 24, tight: true, characterSpacing: -5 }),
+                            mkPara(fields.agencyMain.value  || 'CƠ QUAN BAN HÀNH',  { align: AlignmentType.CENTER, size: 24, bold: true, tight: true, characterSpacing: -5 }),
+                            mkPara('_______________________', { align: AlignmentType.CENTER, size: 16, bold: true, isLine: true }),
+                            emptyLine(),
+                            mkPara(fields.docNumber.value ? `Số: ${fields.docNumber.value}` : 'Số: .../BHXH-...', { align: AlignmentType.CENTER, size: 26 }),
+                            ...(fields.docType.value === 'cong-van' ? [mkPara(`V/v ${fields.docSummary.value || '...'}`, { align: AlignmentType.CENTER, size: 26 })] : [])
+                        ]
+                    }),
+                    new TableCell({
+                        width: { size: 52, type: WidthType.PERCENTAGE },
+                        borders: noBorder,
+                        children: [
+                            mkPara('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', { align: AlignmentType.CENTER, size: 24, bold: true, tight: true, characterSpacing: -5 }),
+                            mkPara('Độc lập - Tự do - Hạnh phúc', { align: AlignmentType.CENTER, size: 26, bold: true, tight: true }),
+                            mkPara('______________________________________', { align: AlignmentType.CENTER, size: 16, bold: true, isLine: true }),
+                            emptyLine(),
+                            mkPara(`${fields.location.value || '...'}, ${formatDate(fields.date.value)}`, { align: AlignmentType.CENTER, size: 28, italics: true })
+                        ]
+                    })
+                ]})]
+            });
+
+            const docType = fields.docType.value;
+            const isCongVan = docType === 'cong-van';
+            const docTypeLabel = DOC_TYPE_LABELS[docType];
+
+            const children = [headerTable, emptyLine()];
+
+            if (isCongVan) {
+                // Công Văn: dòng "Kính gửi:"
+                children.push(new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [
+                        new TextRun({ text: 'Kính gửi: ', font: 'Times New Roman', size: 28 }),
+                        new TextRun({ text: fields.recipientMain.value || '...', font: 'Times New Roman', size: 28 })
+                    ]
+                }));
+            } else {
+                // Báo cáo / Thông báo / Kế hoạch: tên loại in hoa in đậm rồi trích yếu bên dưới
+                children.push(mkPara(docTypeLabel || '', { align: AlignmentType.CENTER, bold: true, size: 32 }));
+                if (fields.docSummary.value.trim()) {
+                    children.push(mkPara(fields.docSummary.value.trim(), { align: AlignmentType.CENTER, size: 28 }));
+                }
+                // Đường kẻ 4 cm căn giữa — dùng paragraph có bottom border với indent 2 bên
+                // Trang A4: 210mm, lề trái 30mm, lề phải 15mm ⇒ vùng nội dung 165mm
+                // Mỗi bên cần indent = (165mm - 40mm) / 2 = 62.5mm = 3543 twip
+                children.push(new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    indent: { left: 3543, right: 3543 },
+                    spacing: { before: 0, after: 80 },
+                    border: {
+                        bottom: { style: docx.BorderStyle.SINGLE, size: 6, color: '000000', space: 0 }
+                    },
+                    children: [new TextRun({ text: '', font: 'Times New Roman', size: 2 })]
+                }));
+            }
+            children.push(emptyLine());
+
+            // Legal basis – chuẩn NĐ30: không nghiêng, không thụt lề, tự thêm dấu câu
+            const basisDocxLines = fields.legalBasis.value.split('\n').filter(l => l.trim());
+            basisDocxLines.forEach((l, i) => {
+                let line = l.trimEnd();
+                if (!/[;,\.]$/.test(line)) line += (i < basisDocxLines.length - 1) ? ';' : ',';
+                children.push(mkPara(line, { align: AlignmentType.JUSTIFIED, indent: true, spacing: true, italics: false }));
+            });
+
+            // Issue statement
+            if (fields.issueStatement.value.trim())
+                children.push(mkPara(fields.issueStatement.value, { align: AlignmentType.JUSTIFIED, indent: true, spacing: true }));
+
+            // Main content
+            fields.mainContent.value.split('\n').filter(l => l.trim()).forEach(l =>
+                children.push(mkPara(l, { align: AlignmentType.JUSTIFIED, indent: true, spacing: true })));
+
+            // Conclusion
+            if (fields.conclusion.value.trim())
+                children.push(mkPara(fields.conclusion.value, { align: AlignmentType.JUSTIFIED, indent: true, spacing: true }));
+
+            children.push(emptyLine());
+
+            // Footer table
+            const ccLines = (fields.recipientsCc.value || '').split('\n').filter(l => l.trim());
+            const ccParas = [
+                new Paragraph({ children: [new TextRun({ text: 'Nơi nhận:', font: 'Times New Roman', size: 24, italics: true, bold: true, underline: { type: UnderlineType.SINGLE } })] })
+            ];
+            ccLines.forEach(l => ccParas.push(new Paragraph({ children: [new TextRun({ text: l, font: 'Times New Roman', size: 22 })] })));
+
+            const pos = fields.signPosition.value || 'GIÁM ĐỐC';
+            const name = fields.signName.value || '';
+            const sigBlocks = [];
+            if (pos.trim().toUpperCase() === 'PHÓ GIÁM ĐỐC')
+                sigBlocks.push(mkPara('KT. GIÁM ĐỐC', { align: AlignmentType.CENTER, size: 28, bold: true }));
+            sigBlocks.push(mkPara(pos, { align: AlignmentType.CENTER, size: 28, bold: true }));
+            for (let i = 0; i < 6; i++) sigBlocks.push(emptyLine());
+            sigBlocks.push(mkPara(name, { align: AlignmentType.CENTER, size: 28, bold: true }));
+
+            const footerTable = new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                borders: noBorder,
+                rows: [new TableRow({ children: [
+                    new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorder, children: ccParas }),
+                    new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: noBorder, children: sigBlocks })
+                ]})]
+            });
+
+            children.push(footerTable);
+
+            const doc = new Document({
+                sections: [{
+                    properties: {
+                        titlePage: true,
+                        page: { margin: { top: mmToTwip(20), bottom: mmToTwip(20), left: mmToTwip(30), right: mmToTwip(15) } }
+                    },
+                    headers: {
+                        default: new Header({ children: [
+                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ children: [PageNumber.CURRENT], font: 'Times New Roman', size: 28 })] })
+                        ]})
+                    },
+                    children
+                }]
+            });
+
+            const btn = document.getElementById('export-docx-btn');
+            btn.disabled = true;
+            btn.textContent = 'Đang xuất...';
+
+            Packer.toBlob(doc).then(blob => {
+                const fname = fields.docSummary.value ? removeVietnameseTones(fields.docSummary.value) : 'cong_van_giam_dinh';
+                saveAs(blob, (fname || 'cong_van_giam_dinh') + '.docx');
+                showToast('✓ Xuất DOCX thành công!', 'success');
+            }).catch(err => {
+                showToast('❌ Xuất DOCX thất bại: ' + err.message, 'error');
+            }).finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Xuất DOCX`;
+            });
+
+        } catch (err) {
+            showToast('❌ Lỗi: ' + err.message, 'error');
+        }
+    };
+
+    // ===== AI PROVIDER LOGIC =====
+    let currentProvider = 'deepseek';
+    let aiIssues = [];
+
+    const ALL_PROVIDERS = ['deepseek', 'openai', 'gemini', 'anthropic'];
+
+    window.selectProvider = (provider) => {
+        currentProvider = provider;
+        ALL_PROVIDERS.forEach(p => {
+            document.getElementById(`provider-${p}`).classList.toggle('active', p === provider);
+            document.getElementById(`${p}-panel`).style.display = p === provider ? '' : 'none';
+        });
+    };
+
+    window.saveDeepseekKey = () => {
+        const key = document.getElementById('deepseek-key').value.trim();
+        if (!key) { showToast('Vui lòng nhập API key!', 'warning'); return; }
+        localStorage.setItem('deepseek_api_key', key);
+        const status = document.getElementById('deepseek-key-status');
+        status.style.display = 'block';
+        status.style.background = '#d1fae5';
+        status.style.color = '#065f46';
+        status.textContent = '✓ Đã lưu API key thành công!';
+        showToast('✓ Đã lưu Deepseek API key!', 'success');
+    };
+
+    window.saveOpenAIKey = () => {
+        const key = document.getElementById('openai-key').value.trim();
+        if (!key) { showToast('Vui lòng nhập API key!', 'warning'); return; }
+        localStorage.setItem('openai_api_key', key);
+        const status = document.getElementById('openai-key-status');
+        status.style.display = 'block';
+        status.style.background = '#d1fae5';
+        status.style.color = '#065f46';
+        status.textContent = '✓ Đã lưu OpenAI API key!';
+        showToast('✓ Đã lưu OpenAI API key!', 'success');
+    };
+
+    window.saveGeminiKey = () => {
+        const key = document.getElementById('gemini-key').value.trim();
+        if (!key) { showToast('Vui lòng nhập API key!', 'warning'); return; }
+        localStorage.setItem('gemini_api_key', key);
+        const status = document.getElementById('gemini-key-status');
+        status.style.display = 'block';
+        status.style.background = '#d1fae5';
+        status.style.color = '#065f46';
+        status.textContent = '✓ Đã lưu Gemini API key!';
+        showToast('✓ Đã lưu Google Gemini API key!', 'success');
+    };
+
+    // Load saved keys on startup
+    const savedDsKey = localStorage.getItem('deepseek_api_key');
+    if (savedDsKey) {
+        document.getElementById('deepseek-key').value = savedDsKey;
+        const s = document.getElementById('deepseek-key-status');
+        s.style.display = 'block'; s.style.background = '#eff6ff'; s.style.color = '#1e40af';
+        s.textContent = '✓ API key đã được lưu sẵn.';
+    }
+    const savedOaKey = localStorage.getItem('openai_api_key');
+    if (savedOaKey) {
+        document.getElementById('openai-key').value = savedOaKey;
+        const s = document.getElementById('openai-key-status');
+        s.style.display = 'block'; s.style.background = '#eff6ff'; s.style.color = '#1e40af';
+        s.textContent = '✓ API key đã được lưu sẵn.';
+    }
+    const savedGmKey = localStorage.getItem('gemini_api_key');
+    if (savedGmKey) {
+        document.getElementById('gemini-key').value = savedGmKey;
+        const s = document.getElementById('gemini-key-status');
+        s.style.display = 'block'; s.style.background = '#eff6ff'; s.style.color = '#1e40af';
+        s.textContent = '✓ API key đã được lưu sẵn.';
+    }
+
+    const buildDocumentContext = () => {
+        const docType = fields.docType.value;
+        const docTypeLabel = DOC_TYPE_LABELS[docType] || 'Công văn';
+        const isCongVan = docType === 'cong-van';
+        return `Văn bản công vụ cần kiểm tra thể thức theo Nghị định 30/2020/NĐ-CP:
+
+- Thể loại văn bản: ${isCongVan ? 'Công văn' : docTypeLabel}
+- Cơ quan chủ quản: ${fields.agencyUpper.value}
+- Cơ quan ban hành: ${fields.agencyMain.value}
+- Số, ký hiệu: ${fields.docNumber.value}
+- Địa danh: ${fields.location.value}
+- Ngày tháng năm: ${formatDate(fields.date.value)}
+- Trích yếu: ${fields.docSummary.value}
+${isCongVan ? `- Kính gửi: ${fields.recipientMain.value}` : ''}
+- Căn cứ pháp lý: ${fields.legalBasis.value}
+- Câu đặt vấn đề: ${fields.issueStatement.value}
+- Nội dung chính: ${fields.mainContent.value}
+- Kết luận: ${fields.conclusion.value}
+- Chức vụ người ký: ${fields.signPosition.value}
+- Họ và tên người ký: ${fields.signName.value}
+- Nơi nhận: ${fields.recipientsCc.value}`.trim();
+    };
+
+    // Các field có thể chứa nhiều dòng — fix chỉ sửa đúng dòng bị lỗi
+    const MULTILINE_FIELDS = ['mainContent', 'legalBasis', 'recipientsCc'];
+
+    const AI_SYSTEM_PROMPT = `Bạn là chuyên gia kiểm tra thể thức văn bản hành chính theo Nghị định 30/2020/NĐ-CP của Việt Nam.
+Hãy kiểm tra văn bản và trả về danh sách lỗi thể thức (nếu có). Với mỗi lỗi, trả về JSON:
+{
+  "issues": [
+    {
+      "field": "tên trường bị lỗi (tiếng Việt)",
+      "fieldKey": "key tương ứng (agencyUpper/agencyMain/docNumber/location/date/docSummary/recipientMain/legalBasis/issueStatement/mainContent/conclusion/signPosition/signName/recipientsCc)",
+      "type": "error hoặc warning",
+      "description": "mô tả lỗi ngắn gọn",
+      "originalText": "đoạn văn/dòng gốc bị lỗi (chép nguyên văn từ nội dung, để trống nếu trường là đơn dòng hoặc cần xóa)",
+      "suggestion": "gợi ý sửa cụ thể (chỉ nội dung thay thế, không có tiền tố)"
+    }
+  ]
+}
+Quy tắc quan trọng:
+- Với các trường đa dòng (Nội dung chính, Căn cứ pháp lý, Nơi nhận): "originalText" phải chép CHÍNH XÁC nguyên văn dòng/đoạn bị lỗi, "suggestion" chỉ là nội dung thay thế cho dòng đó.
+- Với trường đơn dòng: "originalText" để trống, "suggestion" là toàn bộ nội dung mới.
+Nếu không có lỗi, trả về { "issues": [] }. Chỉ trả về JSON, không giải thích thêm.`;
+
+    const renderAIResults = (issues) => {
+        aiIssues = issues;
+        const panel = document.getElementById('ai-result-panel');
+        const badge = document.getElementById('ai-result-badge');
+        const list = document.getElementById('ai-issue-list');
+        const applyAllBtn = document.getElementById('ai-apply-all-btn');
+
+        panel.style.display = '';
+        list.innerHTML = '';
+
+        if (!issues || issues.length === 0) {
+            badge.className = 'ai-result-badge ok';
+            badge.textContent = '✓ Đạt';
+            list.innerHTML = '<div style="text-align:center;padding:14px;color:#10b981;font-weight:700;font-size:.82rem;">✓ Không phát hiện lỗi thể thức!</div>';
+            applyAllBtn.style.display = 'none';
+            return;
+        }
+
+        badge.className = 'ai-result-badge';
+        badge.textContent = `${issues.length} lỗi`;
+        applyAllBtn.style.display = issues.some(i => i.suggestion) ? '' : 'none';
+
+        issues.forEach((issue, idx) => {
+            const item = document.createElement('div');
+            item.className = 'ai-issue-item';
+            item.dataset.idx = idx;
+            const icon = issue.type === 'error' ? '❌' : '⚠️';
+            let html = `<div class="ai-issue-icon">${icon}</div>
+                <div class="ai-issue-body">
+                    <div class="ai-issue-field">${issue.field}</div>
+                    <div class="ai-issue-desc">${issue.description}</div>
+                    ${issue.suggestion ? `<div style="color:#6366f1;font-size:.75rem;margin-top:3px;font-style:italic;">💡 ${issue.suggestion}</div>` : ''}
+                </div>`;
+            if (issue.suggestion && issue.fieldKey && fields[issue.fieldKey]) {
+                html += `<button class="ai-apply-inline-btn" onclick="applyAIFix(${idx})">Sửa</button>`;
+            }
+            item.innerHTML = html;
+            item.addEventListener('click', (e) => {
+                if (e.target.classList.contains('ai-apply-inline-btn')) return;
+                document.querySelectorAll('.ai-issue-item').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+                const el = issue.fieldKey && fields[issue.fieldKey];
+                if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            });
+            list.appendChild(item);
+        });
+    };
+
+    window.applyAIFix = (idx) => {
+        const issue = aiIssues[idx];
+        if (!issue || !issue.fieldKey || !fields[issue.fieldKey] || !issue.suggestion) return;
+
+        const field = fields[issue.fieldKey];
+        const isMultiline = MULTILINE_FIELDS.includes(issue.fieldKey);
+
+        if (isMultiline && issue.originalText && issue.originalText.trim()) {
+            // Chỉ thay thế đúng dòng bị lỗi, giữ nguyên các dòng khác
+            const lines = field.value.split('\n');
+            let replaced = false;
+            const newLines = lines.map(line => {
+                if (!replaced && line.trim() === issue.originalText.trim()) {
+                    replaced = true;
+                    return issue.suggestion.trim();
+                }
+                return line;
+            });
+            if (replaced) {
+                field.value = newLines.join('\n');
+            } else {
+                showToast(`⚠️ Không tìm thấy đoạn gốc để thay, hãy sửa thủ công.`, 'warning');
+                field.focus();
+                return;
+            }
+        } else {
+            field.value = issue.suggestion.trim();
+        }
+
+        field.dispatchEvent(new Event('input'));
+        showToast(`✓ Đã áp dụng sửa lỗi: ${issue.field}`, 'success');
+    };
+
+    document.getElementById('ai-apply-all-btn').addEventListener('click', () => {
+        let count = 0;
+        aiIssues.forEach((issue, idx) => {
+            if (issue.suggestion && issue.fieldKey && fields[issue.fieldKey]) {
+                applyAIFix(idx); count++;
+            }
+        });
+        showToast(`✓ Đã áp dụng ${count} gợi ý sửa lỗi!`, 'success');
+    });
+
+    document.getElementById('ai-check-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('ai-check-btn');
+        const btnText = document.getElementById('ai-btn-text');
+        btn.disabled = true;
+        btnText.textContent = 'Đang kiểm tra...';
+        btn.style.opacity = '0.7';
+
+        try {
+            const docContext = buildDocumentContext();
+
+            const parseAIJson = (content) => {
+                const m = content.match(/\{[\s\S]*\}/);
+                if (!m) throw new Error('Phản hồi AI không đúng định dạng JSON');
+                return JSON.parse(m[0]);
+            };
+
+            const showAIResult = (parsed) => {
+                renderAIResults(parsed.issues || []);
+                const n = (parsed.issues || []).length;
+                showToast(n === 0 ? '✓ Văn bản đạt chuẩn thể thức!' : `⚠️ Phát hiện ${n} lỗi thể thức`, n === 0 ? 'success' : 'warning');
+            };
+
+            if (currentProvider === 'deepseek') {
+                const apiKey = localStorage.getItem('deepseek_api_key') || document.getElementById('deepseek-key').value.trim();
+                if (!apiKey) { showToast('⚠️ Vui lòng nhập và lưu DeepSeek API Key trước!', 'warning'); return; }
+                const resp = await fetch('https://api.deepseek.com/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'system', content: AI_SYSTEM_PROMPT }, { role: 'user', content: docContext }], temperature: 0.1, max_tokens: 2000 })
+                });
+                if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
+                const data = await resp.json();
+                showAIResult(parseAIJson(data.choices?.[0]?.message?.content || ''));
+
+            } else if (currentProvider === 'openai') {
+                const apiKey = localStorage.getItem('openai_api_key') || document.getElementById('openai-key').value.trim();
+                if (!apiKey) { showToast('⚠️ Vui lòng nhập và lưu OpenAI API Key trước!', 'warning'); return; }
+                const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'system', content: AI_SYSTEM_PROMPT }, { role: 'user', content: docContext }], temperature: 0.1, max_tokens: 2000, response_format: { type: 'json_object' } })
+                });
+                if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${resp.status}`); }
+                const data = await resp.json();
+                showAIResult(parseAIJson(data.choices?.[0]?.message?.content || ''));
+
+            } else if (currentProvider === 'gemini') {
+                const apiKey = localStorage.getItem('gemini_api_key') || document.getElementById('gemini-key').value.trim();
+                if (!apiKey) { showToast('⚠️ Vui lòng nhập và lưu Google Gemini API Key trước!', 'warning'); return; }
+                // Tự động thử lần lượt các model nếu bị quota
+                const geminiModels = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+                let geminiData = null, lastErr = null;
+                for (const model of geminiModels) {
+                    try {
+                        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: AI_SYSTEM_PROMPT + '\n\n' + docContext }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 2000 } })
+                        });
+                        if (!r.ok) {
+                            const e = await r.json().catch(()=>({}));
+                            lastErr = new Error(e.error?.message || `HTTP ${r.status}`);
+                            continue; // thử model tiếp theo
+                        }
+                        geminiData = await r.json();
+                        console.log(`Gemini: dùng model ${model}`);
+                        break;
+                    } catch(e) { lastErr = e; }
+                }
+                if (!geminiData) throw lastErr || new Error('Tất cả Gemini model đều thất bại');
+                const content = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                showAIResult(parseAIJson(content));
+
+            } else {
+                showToast('⚠️ Claude AI chỉ hoạt động khi mở trong claude.ai', 'warning');
+            }
+
+        } catch (err) {
+            showToast('❌ Lỗi kiểm tra AI: ' + err.message, 'error');
+            console.error('AI check error:', err);
+        } finally {
+            btn.disabled = false;
+            btnText.textContent = 'Kiểm tra lỗi & Thể thức';
+            btn.style.opacity = '';
+        }
+    });
+
+    // Tooltip
+    const tooltip = document.getElementById('ai-fix-tooltip');
+
+    // Event listeners
+    Object.values(fields).forEach(f => {
+        if (f) { f.addEventListener('input', updatePreview); f.addEventListener('change', updatePreview); }
+    });
+    fields.agencyMain.addEventListener('change', updateAgencyLogic);
+    fields.signPosition.addEventListener('change', () => { updateSignatories(); updatePreview(); });
+
+    document.getElementById('export-docx-btn').addEventListener('click', exportDocx);
+    document.getElementById('save-btn').addEventListener('click', saveFormData);
+    document.getElementById('load-btn').addEventListener('click', loadFormData);
+    document.getElementById('new-btn').addEventListener('click', newDocument);
+
+    // History modal
+    document.getElementById('history-btn').addEventListener('click', () => {
+        renderHistory();
+        document.getElementById('history-modal').classList.add('open');
+    });
+    document.getElementById('modal-close-btn').addEventListener('click', () => {
+        document.getElementById('history-modal').classList.remove('open');
+    });
+    document.getElementById('history-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+    });
+
+    // Event: doc type change
+    fields.docType.addEventListener('change', updatePreview);
+
+    // Init
+    fields.date.value = new Date().toISOString().split('T')[0];
+    ['docSummary','recipientMain','legalBasis','issueStatement','mainContent','conclusion','recipientsCc']
+        .forEach(k => { fields[k].value = ''; });
+    updateAgencyLogic();
+});
+</script>
+</body>
+</html>

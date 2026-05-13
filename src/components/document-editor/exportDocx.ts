@@ -1,7 +1,7 @@
 import {
   Document, Packer, Paragraph, TextRun, AlignmentType,
   BorderStyle, Table, TableRow, TableCell, WidthType,
-  convertInchesToTwip, HeadingLevel,
+  LineRuleType, convertInchesToTwip,
 } from 'docx'
 import { saveAs } from 'file-saver'
 import { DocumentState } from '@/types'
@@ -12,18 +12,39 @@ const DOC_TYPE_TITLES: Record<string, string> = {
   'ke-hoach': 'KẾ HOẠCH',
 }
 
+const addPunctuation = (line: string, isLast: boolean): string => {
+  const expected = isLast ? ',' : ';'
+  const stripped = line.replace(/[;,]\s*$/, '')
+  return `${stripped}${expected}`
+}
+
+const emptyLine = () => new Paragraph({ children: [new TextRun({ text: '', font: 'Times New Roman', size: 28 })] })
+
+const noBorder = {
+  top: { style: BorderStyle.NONE },
+  bottom: { style: BorderStyle.NONE },
+  left: { style: BorderStyle.NONE },
+  right: { style: BorderStyle.NONE },
+}
+
 export async function exportDocx(state: DocumentState) {
   const isCongVan = state.docType === 'cong-van'
+  const isDeputy = /phó/i.test(state.signPosition)
 
   const formattedDate = state.date
     ? (() => {
-        const d = new Date(state.date)
-        return `${state.location}, ngày ${d.getDate()} tháng ${d.getMonth() + 1} năm ${d.getFullYear()}`
+        const d = new Date(state.date + 'T00:00:00')
+        const day = String(d.getDate()).padStart(2, '0')
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        return `${state.location}, ngày ${day} tháng ${month} năm ${d.getFullYear()}`
       })()
     : `${state.location}, ngày ... tháng ... năm ...`
 
   const legalBasisLines = state.legalBasis.split('\n').map(l => l.trim()).filter(Boolean)
   const recipientsCcLines = state.recipientsCc.split('\n').map(l => l.trim()).filter(Boolean)
+  const mainContentLines = state.mainContent.split('\n').filter(l => l.trim())
+
+  const bodyIndent = { firstLine: convertInchesToTwip(0.5) } // 1.27cm
 
   const doc = new Document({
     sections: [{
@@ -38,115 +59,144 @@ export async function exportDocx(state: DocumentState) {
         },
       },
       children: [
-        // Header table: Cơ quan | Quốc hiệu
+        // Header: Cơ quan (48%) | Quốc hiệu (52%)
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: {
-            top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
-            left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE },
-          },
+          borders: noBorder,
           rows: [new TableRow({ children: [
             new TableCell({
-              width: { size: 50, type: WidthType.PERCENTAGE },
+              width: { size: 48, type: WidthType.PERCENTAGE },
+              borders: noBorder,
               children: [
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: state.agencyUpper, size: 24 }),
+                  new TextRun({ text: state.agencyUpper, font: 'Times New Roman', size: 24, allCaps: true }),
                 ]}),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: state.agencyMain, bold: true, size: 24 }),
+                  new TextRun({ text: state.agencyMain, font: 'Times New Roman', bold: true, size: 24, allCaps: true }),
                 ]}),
-                new Paragraph({ alignment: AlignmentType.CENTER, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' } }, children: [
-                  new TextRun({ text: '' }),
-                ]}),
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' } },
+                  children: [new TextRun({ text: '', font: 'Times New Roman' })],
+                }),
+                emptyLine(),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: `Số: ${state.docNumber || '...'}/${state.agencyMain.split(' ').pop()}`, size: 26 }),
+                  new TextRun({ text: `Số: ${state.docNumber || '...'}`, font: 'Times New Roman', size: 26 }),
                 ]}),
                 ...(isCongVan ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: `V/v ${state.docSummary}`, size: 26 }),
+                  new TextRun({ text: `V/v ${state.docSummary}`, font: 'Times New Roman', size: 26 }),
                 ]})] : []),
               ],
             }),
             new TableCell({
-              width: { size: 50, type: WidthType.PERCENTAGE },
+              width: { size: 52, type: WidthType.PERCENTAGE },
+              borders: noBorder,
               children: [
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true, size: 24, allCaps: true }),
+                  new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', font: 'Times New Roman', bold: true, size: 24, allCaps: true }),
                 ]}),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', bold: true, size: 26 }),
+                  new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', font: 'Times New Roman', bold: true, size: 26 }),
                 ]}),
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 0, after: 0, line: 160, lineRule: LineRuleType.EXACTLY },
+                  children: [new TextRun({ text: '______________________________________', font: 'Times New Roman', bold: true, size: 16 })],
+                }),
+                emptyLine(),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: formattedDate, italics: true, size: 26 }),
+                  new TextRun({ text: formattedDate, font: 'Times New Roman', italics: true, size: 28 }),
                 ]}),
               ],
             }),
           ]})],
         }),
 
-        new Paragraph({ text: '' }),
+        emptyLine(),
 
-        // Kính gửi hoặc tên loại
+        // Kính gửi / Tên loại văn bản
         ...(isCongVan ? [
           new Paragraph({ alignment: AlignmentType.CENTER, children: [
-            new TextRun({ text: 'Kính gửi: ', bold: true, size: 28 }),
-            new TextRun({ text: state.recipient, size: 28 }),
+            new TextRun({ text: `Kính gửi: ${state.recipient}`, font: 'Times New Roman', size: 28 }),
           ]}),
         ] : [
           new Paragraph({ alignment: AlignmentType.CENTER, children: [
-            new TextRun({ text: DOC_TYPE_TITLES[state.docType] || '', bold: true, size: 32, allCaps: true }),
+            new TextRun({ text: DOC_TYPE_TITLES[state.docType] || '', font: 'Times New Roman', bold: true, size: 32, allCaps: true }),
           ]}),
           new Paragraph({ alignment: AlignmentType.CENTER, children: [
-            new TextRun({ text: state.docSummary, size: 28 }),
+            new TextRun({ text: state.docSummary, font: 'Times New Roman', size: 28 }),
           ]}),
         ]),
 
-        new Paragraph({ text: '' }),
+        emptyLine(),
 
-        // Căn cứ
-        ...legalBasisLines.map(line => new Paragraph({ children: [
-          new TextRun({ text: `- Căn cứ ${line};`, size: 28 }),
-        ]})),
+        // Căn cứ pháp lý
+        ...legalBasisLines.map((line, i) => new Paragraph({
+          alignment: AlignmentType.BOTH,
+          indent: bodyIndent,
+          children: [
+            new TextRun({ text: addPunctuation(`- Căn cứ ${line}`, i === legalBasisLines.length - 1), font: 'Times New Roman', size: 28 }),
+          ],
+        })),
 
-        ...(state.issueStatement ? [new Paragraph({ indent: { firstLine: convertInchesToTwip(0.59) }, children: [
-          new TextRun({ text: state.issueStatement, size: 28 }),
-        ]})] : []),
+        // Đặt vấn đề
+        ...(state.issueStatement ? [new Paragraph({
+          alignment: AlignmentType.BOTH,
+          indent: bodyIndent,
+          children: [new TextRun({ text: state.issueStatement, font: 'Times New Roman', size: 28 })],
+        })] : []),
 
-        ...(state.mainContent ? state.mainContent.split('\n').map(line => new Paragraph({ indent: { firstLine: convertInchesToTwip(0.59) }, children: [
-          new TextRun({ text: line, size: 28 }),
-        ]})) : []),
+        // Nội dung chính — mỗi dòng là một đoạn riêng
+        ...mainContentLines.map(line => new Paragraph({
+          alignment: AlignmentType.BOTH,
+          indent: bodyIndent,
+          children: [new TextRun({ text: line, font: 'Times New Roman', size: 28 })],
+        })),
 
-        ...(state.conclusion ? [new Paragraph({ indent: { firstLine: convertInchesToTwip(0.59) }, children: [
-          new TextRun({ text: state.conclusion, size: 28 }),
-        ]})] : []),
+        // Kết luận
+        ...(state.conclusion ? [new Paragraph({
+          alignment: AlignmentType.BOTH,
+          indent: bodyIndent,
+          children: [new TextRun({ text: state.conclusion, font: 'Times New Roman', size: 28 })],
+        })] : []),
 
-        new Paragraph({ text: '' }),
+        emptyLine(),
 
         // Footer: Nơi nhận + Chữ ký
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: {
-            top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE },
-            left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE },
-          },
+          borders: noBorder,
           rows: [new TableRow({ children: [
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: noBorder,
               children: [
-                new Paragraph({ children: [new TextRun({ text: 'Nơi nhận:', bold: true, size: 24 })] }),
-                ...recipientsCcLines.map(line => new Paragraph({ children: [new TextRun({ text: line, size: 24 })] })),
+                new Paragraph({ children: [
+                  new TextRun({ text: 'Nơi nhận:', font: 'Times New Roman', italics: true, bold: true, underline: {}, size: 24 }),
+                ]}),
+                ...recipientsCcLines.map(line => new Paragraph({
+                  children: [new TextRun({ text: line, font: 'Times New Roman', size: 22 })],
+                })),
               ],
             }),
             new TableCell({
               width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: noBorder,
               children: [
+                ...(isDeputy ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [
+                  new TextRun({ text: 'KT. GIÁM ĐỐC', font: 'Times New Roman', bold: true, size: 28 }),
+                ]})] : []),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: state.signPosition, bold: true, size: 28 }),
+                  new TextRun({ text: state.signPosition, font: 'Times New Roman', bold: true, size: 28, allCaps: true }),
                 ]}),
-                new Paragraph({ text: '' }),
-                new Paragraph({ text: '' }),
-                new Paragraph({ text: '' }),
+                emptyLine(),
+                emptyLine(),
+                emptyLine(),
+                emptyLine(),
+                emptyLine(),
+                emptyLine(),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: state.signName, bold: true, size: 28 }),
+                  new TextRun({ text: state.signName, font: 'Times New Roman', bold: true, size: 28 }),
                 ]}),
               ],
             }),
