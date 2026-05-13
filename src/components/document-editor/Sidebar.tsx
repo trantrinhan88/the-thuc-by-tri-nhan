@@ -1,8 +1,9 @@
 'use client'
 
 import { Dispatch } from 'react'
-import { DocumentState, DocType, Agency, Signer, AIIssue } from '@/types'
+import { DocumentState, DocType, Agency, Signer } from '@/types'
 import AIPanel from './AIPanel'
+import WordImportPanel from './WordImportPanel'
 
 type Action =
   | { type: 'SET_FIELD'; field: keyof DocumentState; value: string }
@@ -24,6 +25,13 @@ interface SidebarProps {
   documentCount: number
 }
 
+const AGENCY_DEFAULTS: Record<string, { suffix: string; location: string }> = {
+  'BẢO HIỂM XÃ HỘI CƠ SỞ CAO LÃNH': { suffix: '/BHXH-CL', location: 'Cao Lãnh' },
+  'BẢO HIỂM XÃ HỘI CƠ SỞ THÁP MƯỜI': { suffix: '/BHXH-TM', location: 'Tháp Mười' },
+  'BẢO HIỂM XÃ HỘI CƠ SỞ TAM NÔNG': { suffix: '/BHXH-TN', location: 'Tam Nông' },
+  'BẢO HIỂM XÃ HỘI CƠ SỞ THANH BÌNH': { suffix: '/BHXH-TB', location: 'Thanh Bình' },
+}
+
 const DOC_TYPE_OPTIONS: { value: DocType; label: string }[] = [
   { value: 'cong-van', label: 'Công Văn' },
   { value: 'bao-cao', label: 'Báo cáo' },
@@ -43,6 +51,25 @@ export default function Sidebar({
 
   const filteredSigners = signers.filter(s => s.position === state.signPosition)
 
+  function handleAgencyChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value
+    dispatch({ type: 'SET_FIELD', field: 'agencyMain', value })
+
+    const selectedAgency = agencies.find(a => a.main === value)
+    if (selectedAgency?.upper) {
+      dispatch({ type: 'SET_FIELD', field: 'agencyUpper', value: selectedAgency.upper })
+    }
+
+    const defaults = AGENCY_DEFAULTS[value.toUpperCase().trim()]
+    if (defaults) {
+      dispatch({ type: 'SET_FIELD', field: 'location', value: defaults.location })
+      const currentNum = state.docNumber.split('/')[0].trim()
+      dispatch({ type: 'SET_FIELD', field: 'docNumber', value: currentNum ? `${currentNum}${defaults.suffix}` : defaults.suffix })
+    } else if (selectedAgency?.location) {
+      dispatch({ type: 'SET_FIELD', field: 'location', value: selectedAgency.location })
+    }
+  }
+
   return (
     <aside className="w-[420px] min-w-[420px] bg-[#f7f8fc] border-r-[1.5px] border-[#dde1ef] flex flex-col z-10 shadow-[3px_0_18px_rgba(26,86,176,0.07)] overflow-hidden">
       {/* Header */}
@@ -61,7 +88,7 @@ export default function Sidebar({
             <input value={state.agencyUpper} onChange={set('agencyUpper')} className={inputCls} />
           </Field>
           <Field label="Cơ quan ban hành">
-            <select value={state.agencyMain} onChange={set('agencyMain')} className={inputCls}>
+            <select value={state.agencyMain} onChange={handleAgencyChange} className={inputCls}>
               {agencies.map(a => (
                 <option key={a.main} value={a.main}>{a.main}</option>
               ))}
@@ -148,10 +175,18 @@ export default function Sidebar({
           </Field>
         </section>
 
-        {/* 6. AI */}
+        {/* 6. AI Kiểm tra */}
         <section className="bg-[#f0f4ff] border-[1.5px] border-[#c3d0f5] rounded-lg p-4">
           <SectionTitle className="text-[#3b52bf] border-[#c3d0f5]">6. Kiểm tra lỗi thể thức (AI)</SectionTitle>
           <AIPanel documentState={state} />
+        </section>
+
+        {/* 7. Import Word & Gợi ý AI */}
+        <section className="bg-[#f5f3ff] border-[1.5px] border-[#ddd6fe] rounded-lg p-4">
+          <SectionTitle className="text-[#7c3aed] border-[#ddd6fe]">7. Import Word &amp; Gợi ý nội dung (AI)</SectionTitle>
+          <WordImportPanel
+            onApply={(text) => dispatch({ type: 'SET_FIELD', field: 'mainContent', value: text })}
+          />
         </section>
 
         {/* Lịch sử phiên bản */}

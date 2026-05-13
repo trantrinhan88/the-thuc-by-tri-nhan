@@ -15,7 +15,7 @@ const addPunctuation = (line: string, isLast: boolean): string => {
 }
 
 const isHeadingLine = (line: string): boolean =>
-  /^(VII|III|VI|IV|II|I|V|\d+)[.)\s]/i.test(line.trim())
+  /^(VII|III|VI|IV|II|I|V|\d+)(?!\.\d+\.\d)[.)\s]/i.test(line.trim())
 
 interface A4PreviewProps {
   state: DocumentState

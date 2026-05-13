@@ -40,7 +40,7 @@ function removeVietnameseDiacritics(str: string): string {
 }
 
 function isHeadingLine(line: string): boolean {
-  return /^(VII|III|VI|IV|II|I|V|\d+)[.)\s]/i.test(line.trim())
+  return /^(VII|III|VI|IV|II|I|V|\d+)(?!\.\d+\.\d)[.)\s]/i.test(line.trim())
 }
 
 export async function exportDocx(state: DocumentState) {
