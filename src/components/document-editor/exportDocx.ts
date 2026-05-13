@@ -25,6 +25,18 @@ const noBorder = {
   bottom: { style: BorderStyle.NONE },
   left: { style: BorderStyle.NONE },
   right: { style: BorderStyle.NONE },
+  insideH: { style: BorderStyle.NONE },
+  insideV: { style: BorderStyle.NONE },
+}
+
+function removeVietnameseDiacritics(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ')
 }
 
 export async function exportDocx(state: DocumentState) {
@@ -207,6 +219,6 @@ export async function exportDocx(state: DocumentState) {
   })
 
   const blob = await Packer.toBlob(doc)
-  const filename = `${state.docNumber || 'vanban'}-${state.docType}.docx`
+  const filename = `${removeVietnameseDiacritics(state.docSummary) || 'vanban'}.docx`
   saveAs(blob, filename)
 }

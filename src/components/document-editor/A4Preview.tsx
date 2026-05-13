@@ -65,6 +65,8 @@ export default function A4Preview({ state }: A4PreviewProps) {
         lineHeight: '1.35',
         color: '#000',
         borderRadius: '2px',
+        overflowWrap: 'break-word',
+        wordBreak: 'break-word',
       }}
     >
       {/* Document Header */}
@@ -94,7 +96,7 @@ export default function A4Preview({ state }: A4PreviewProps) {
           <div style={{ fontSize: '13pt', fontWeight: 'bold', display: 'inline-block', borderBottom: '1px solid black' }}>
             Độc lập - Tự do - Hạnh phúc
           </div>
-          <div style={{ fontSize: '13pt', fontStyle: 'italic', whiteSpace: 'nowrap', marginTop: '4pt' }}>
+          <div style={{ fontSize: '13pt', fontStyle: 'italic', marginTop: '4pt' }}>
             {formattedDate}
           </div>
         </div>
