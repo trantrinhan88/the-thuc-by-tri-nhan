@@ -112,7 +112,7 @@ export async function exportDocx(state: DocumentState) {
                   new TextRun({ text: state.agencyMain, font: 'Times New Roman', bold: true, size: 24, allCaps: true, characterSpacing: -20 }),
                 ]}),
                 new Paragraph({
-                  alignment: AlignmentType.CENTER,
+                  indent: { left: 827, right: 827 },
                   border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000' } },
                   children: [new TextRun({ text: '', font: 'Times New Roman' })],
                 }),

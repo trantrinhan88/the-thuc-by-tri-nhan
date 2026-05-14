@@ -24,25 +24,23 @@ async function checkRateLimit(userId: string, supabase: Awaited<ReturnType<typeo
 }
 
 function buildPrompt(doc: DocumentState): string {
-  return `Bạn là chuyên gia kiểm tra thể thức văn bản hành chính Việt Nam theo Nghị định 30/2020/NĐ-CP.
+  const fields = [
+    ['Trích yếu', doc.docSummary],
+    ['Kính gửi / Gửi đến', doc.recipient],
+    ['Căn cứ pháp lý', doc.legalBasis],
+    ['Đặt vấn đề', doc.issueStatement],
+    ['Nội dung chính', doc.mainContent.substring(0, 1000)],
+    ['Kết luận', doc.conclusion],
+  ].filter(([, v]) => v?.trim()).map(([k, v]) => `${k}: ${v}`).join('\n')
 
-Hãy kiểm tra văn bản sau và trả về danh sách các vấn đề về thể thức (nếu có):
+  return `Bạn là chuyên gia ngôn ngữ tiếng Việt. Hãy kiểm tra lỗi chính tả trong các trường nội dung dưới đây.
 
-Loại văn bản: ${doc.docType}
-Cơ quan ban hành: ${doc.agencyMain}
-Số ký hiệu: ${doc.docNumber}
-Ngày: ${doc.date}
-Trích yếu: ${doc.docSummary}
-Kính gửi: ${doc.recipient}
-Căn cứ pháp lý: ${doc.legalBasis}
-Nội dung chính: ${doc.mainContent.substring(0, 500)}
-Chức vụ ký: ${doc.signPosition}
-Họ tên ký: ${doc.signName}
+${fields}
 
 Trả về JSON với định dạng:
-{"issues": [{"field": "tên trường", "type": "error|warning", "description": "mô tả lỗi", "suggestion": "gợi ý sửa"}]}
+{"issues": [{"field": "tên trường có lỗi", "type": "error|warning", "description": "từ bị sai chính tả", "suggestion": "cách viết đúng"}]}
 
-Nếu không có lỗi: {"issues": []}
+Nếu không có lỗi chính tả: {"issues": []}
 Chỉ trả về JSON, không giải thích thêm.`
 }
 

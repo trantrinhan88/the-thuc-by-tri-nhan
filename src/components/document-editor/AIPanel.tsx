@@ -72,7 +72,7 @@ export default function AIPanel({ documentState }: AIPanelProps) {
         ) : (
           <span>🔍</span>
         )}
-        {loading ? 'Đang kiểm tra...' : 'Kiểm tra lỗi & Thể thức'}
+        {loading ? 'Đang kiểm tra...' : 'Kiểm tra lỗi chính tả'}
       </button>
 
       {error && (
@@ -91,7 +91,7 @@ export default function AIPanel({ documentState }: AIPanelProps) {
           </div>
           {issues.length === 0 ? (
             <div className="text-center py-4 text-sm text-[#10b981] font-semibold">
-              Văn bản đạt chuẩn thể thức ✓
+              Không phát hiện lỗi chính tả ✓
             </div>
           ) : (
             <div className="max-h-64 overflow-y-auto p-1.5 space-y-1">

@@ -6,10 +6,19 @@ interface WordImportPanelProps {
   onApply: (text: string) => void
 }
 
-const LS_KEY = 'word-import-api-key'
+type Provider = 'anthropic' | 'gemini' | 'deepseek'
+
+const PROVIDERS: { value: Provider; label: string; placeholder: string; storageKey: string; color: string }[] = [
+  { value: 'anthropic', label: 'Claude', placeholder: 'sk-ant-api03-...', storageKey: 'wi-anthropic-key', color: '#c97d4e' },
+  { value: 'gemini', label: 'Gemini', placeholder: 'AIza...', storageKey: 'wi-gemini-key', color: '#4285f4' },
+  { value: 'deepseek', label: 'DeepSeek', placeholder: 'sk-...', storageKey: 'wi-deepseek-key', color: '#6366f1' },
+]
+
+const ACCEPTED = '.docx,.doc,.pdf,.xlsx,.xls'
 
 export default function WordImportPanel({ onApply }: WordImportPanelProps) {
-  const [apiKey, setApiKey] = useState('')
+  const [provider, setProvider] = useState<Provider>('anthropic')
+  const [apiKeys, setApiKeys] = useState<Record<Provider, string>>({ anthropic: '', gemini: '', deepseek: '' })
   const [prompt, setPrompt] = useState('')
   const [fileName, setFileName] = useState('')
   const [docContent, setDocContent] = useState('')
@@ -20,8 +29,18 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    setApiKey(localStorage.getItem(LS_KEY) || '')
+    const loaded: Record<Provider, string> = { anthropic: '', gemini: '', deepseek: '' }
+    for (const p of PROVIDERS) {
+      loaded[p.value] = localStorage.getItem(p.storageKey) || ''
+    }
+    setApiKeys(loaded)
   }, [])
+
+  function setKey(val: string) {
+    const updated = { ...apiKeys, [provider]: val }
+    setApiKeys(updated)
+    localStorage.setItem(PROVIDERS.find(p => p.value === provider)!.storageKey, val.trim())
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -48,8 +67,8 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
   }
 
   async function handleSuggest() {
+    const apiKey = apiKeys[provider]
     if (!apiKey.trim() || !prompt.trim()) return
-    localStorage.setItem(LS_KEY, apiKey.trim())
     setLoading(true)
     setError('')
     setResult('')
@@ -57,7 +76,7 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
       const res = await fetch('/api/ai/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: apiKey.trim(), prompt: prompt.trim(), docContent }),
+        body: JSON.stringify({ apiKey: apiKey.trim(), prompt: prompt.trim(), docContent, provider }),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -83,20 +102,40 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
   }
 
   const inputCls = 'w-full px-3 py-[0.55rem] border-[1.5px] border-[#dde1ef] rounded-[6px] text-[0.855rem] font-[inherit] bg-white text-[#1a1f36] focus:outline-none focus:border-[#1a56b0] focus:ring-2 focus:ring-[#1a56b0]/10'
+  const currentProvider = PROVIDERS.find(p => p.value === provider)!
 
   return (
     <div className="space-y-3">
+      {/* Provider selector */}
+      <div>
+        <label className="block text-[0.78rem] font-semibold text-[#6b7597] mb-1">Nhà cung cấp AI</label>
+        <div className="flex gap-1.5">
+          {PROVIDERS.map(p => (
+            <button
+              key={p.value}
+              onClick={() => setProvider(p.value)}
+              style={provider === p.value ? { background: p.color, borderColor: p.color, color: 'white' } : {}}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-md border-[1.5px] border-[#ddd6fe] transition-all ${
+                provider === p.value ? '' : 'text-[#7c3aed] hover:bg-[#f5f3ff]'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* File import */}
       <div>
         <label className="block text-[0.78rem] font-semibold text-[#6b7597] mb-1">
-          File Word đính kèm (.docx)
+          File đính kèm (.docx .doc .pdf .xlsx .xls)
         </label>
         <div className="flex gap-2 items-center">
           <button
             onClick={() => fileRef.current?.click()}
             className="flex-1 py-[0.55rem] px-3 border-[1.5px] border-dashed border-[#c3d0f5] rounded-[6px] text-xs text-[#3b52bf] hover:bg-[#eef2ff] transition-colors text-left truncate"
           >
-            {isParsing ? '⏳ Đang đọc...' : fileName ? `📄 ${fileName}` : '📂 Chọn file .docx'}
+            {isParsing ? '⏳ Đang đọc...' : fileName ? `📄 ${fileName}` : '📂 Chọn file'}
           </button>
           {fileName && (
             <button onClick={clearFile} className="shrink-0 text-xs text-red-400 hover:text-red-600 px-1.5 py-1">
@@ -104,7 +143,7 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
             </button>
           )}
         </div>
-        <input ref={fileRef} type="file" accept=".docx,.doc" onChange={handleFileChange} className="hidden" />
+        <input ref={fileRef} type="file" accept={ACCEPTED} onChange={handleFileChange} className="hidden" />
         {docContent && (
           <div className="mt-1 text-[0.7rem] text-[#10b981] font-semibold">
             ✓ Đã đọc {docContent.length.toLocaleString()} ký tự
@@ -115,23 +154,21 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
       {/* API Key */}
       <div>
         <label className="block text-[0.78rem] font-semibold text-[#6b7597] mb-1">
-          Anthropic API Key
+          {currentProvider.label} API Key
         </label>
         <input
           type="password"
-          value={apiKey}
-          onChange={e => setApiKey(e.target.value)}
-          placeholder="sk-ant-api03-..."
+          value={apiKeys[provider]}
+          onChange={e => setKey(e.target.value)}
+          placeholder={currentProvider.placeholder}
           className={`${inputCls} font-mono text-[0.78rem]`}
         />
-        <div className="text-[0.68rem] text-[#9ca3af] mt-0.5">Lưu tự động trong trình duyệt</div>
+        <div className="text-[0.68rem] text-[#9ca3af] mt-0.5">Lưu tự động theo từng nhà cung cấp</div>
       </div>
 
       {/* Prompt */}
       <div>
-        <label className="block text-[0.78rem] font-semibold text-[#6b7597] mb-1">
-          Yêu cầu gợi ý nội dung
-        </label>
+        <label className="block text-[0.78rem] font-semibold text-[#6b7597] mb-1">Yêu cầu gợi ý nội dung</label>
         <textarea
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
@@ -143,7 +180,7 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
 
       <button
         onClick={handleSuggest}
-        disabled={loading || !apiKey.trim() || !prompt.trim()}
+        disabled={loading || !apiKeys[provider].trim() || !prompt.trim()}
         className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold bg-[#7c3aed] text-white hover:bg-[#6d28d9] disabled:opacity-50 transition-colors"
       >
         {loading

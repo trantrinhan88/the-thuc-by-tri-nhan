@@ -1,6 +1,6 @@
 'use client'
 
-import { Dispatch } from 'react'
+import { Dispatch, useEffect, useState } from 'react'
 import { DocumentState, DocType, Agency, Signer } from '@/types'
 import AIPanel from './AIPanel'
 import WordImportPanel from './WordImportPanel'
@@ -45,6 +45,21 @@ export default function Sidebar({
   versions, onLoadVersion, onDeleteVersion,
   isSaving, documentCount,
 }: SidebarProps) {
+  const [defaultSuffix, setDefaultSuffix] = useState('/BHXH-CL')
+
+  useEffect(() => {
+    setDefaultSuffix(localStorage.getItem('doc-default-suffix') || '/BHXH-CL')
+  }, [])
+
+  function saveDefaultSuffix() {
+    localStorage.setItem('doc-default-suffix', defaultSuffix)
+  }
+
+  function applyDefaultSuffix() {
+    const numPart = state.docNumber.split('/')[0].trim()
+    dispatch({ type: 'SET_FIELD', field: 'docNumber', value: numPart ? `${numPart}${defaultSuffix}` : defaultSuffix })
+  }
+
   const set = (field: keyof DocumentState) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => dispatch({ type: 'SET_FIELD', field, value: e.target.value })
@@ -80,6 +95,33 @@ export default function Sidebar({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#dde1ef]">
+
+        {/* 0. Cài đặt ban đầu */}
+        <section className="bg-[#fffbeb] border-[1.5px] border-[#fde68a] rounded-lg p-4">
+          <SectionTitle className="text-[#92400e] border-[#fde68a]">Cài đặt ban đầu</SectionTitle>
+          <Field label="Ký hiệu văn bản (mặc định)">
+            <input
+              value={defaultSuffix}
+              onChange={e => setDefaultSuffix(e.target.value)}
+              placeholder="/BHXH-CL"
+              className={inputCls}
+            />
+          </Field>
+          <div className="flex gap-2">
+            <button
+              onClick={saveDefaultSuffix}
+              className="flex-1 py-1.5 text-xs font-semibold bg-[#f59e0b] text-white rounded-md hover:bg-[#d97706] transition-colors"
+            >
+              Lưu mặc định
+            </button>
+            <button
+              onClick={applyDefaultSuffix}
+              className="flex-1 py-1.5 text-xs font-semibold bg-[#1a56b0] text-white rounded-md hover:bg-[#1345a0] transition-colors"
+            >
+              Áp dụng vào văn bản
+            </button>
+          </div>
+        </section>
 
         {/* 1. Thông tin cơ quan */}
         <section>
@@ -177,7 +219,7 @@ export default function Sidebar({
 
         {/* 6. AI Kiểm tra */}
         <section className="bg-[#f0f4ff] border-[1.5px] border-[#c3d0f5] rounded-lg p-4">
-          <SectionTitle className="text-[#3b52bf] border-[#c3d0f5]">6. Kiểm tra lỗi thể thức (AI)</SectionTitle>
+          <SectionTitle className="text-[#3b52bf] border-[#c3d0f5]">6. Kiểm tra lỗi chính tả (AI)</SectionTitle>
           <AIPanel documentState={state} />
         </section>
 
