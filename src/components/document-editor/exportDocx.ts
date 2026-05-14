@@ -20,13 +20,14 @@ const addPunctuation = (line: string, isLast: boolean): string => {
 
 const emptyLine = () => new Paragraph({ children: [new TextRun({ text: '', font: 'Times New Roman', size: 28 })] })
 
+// "nil" forces OOXML to suppress borders completely (stronger than "none")
 const noBorder = {
-  top: { style: BorderStyle.NONE },
-  bottom: { style: BorderStyle.NONE },
-  left: { style: BorderStyle.NONE },
-  right: { style: BorderStyle.NONE },
-  insideH: { style: BorderStyle.NONE },
-  insideV: { style: BorderStyle.NONE },
+  top: { style: 'nil' as (typeof BorderStyle)[keyof typeof BorderStyle], size: 0 },
+  bottom: { style: 'nil' as (typeof BorderStyle)[keyof typeof BorderStyle], size: 0 },
+  left: { style: 'nil' as (typeof BorderStyle)[keyof typeof BorderStyle], size: 0 },
+  right: { style: 'nil' as (typeof BorderStyle)[keyof typeof BorderStyle], size: 0 },
+  insideH: { style: 'nil' as (typeof BorderStyle)[keyof typeof BorderStyle], size: 0 },
+  insideV: { style: 'nil' as (typeof BorderStyle)[keyof typeof BorderStyle], size: 0 },
 }
 
 function removeVietnameseDiacritics(str: string): string {
