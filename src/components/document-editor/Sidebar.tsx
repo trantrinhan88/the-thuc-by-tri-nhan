@@ -1,6 +1,6 @@
 'use client'
 
-import { Dispatch, useEffect, useState } from 'react'
+import { Dispatch, useEffect, useRef, useState } from 'react'
 import { DocumentState, DocType, Agency, Signer } from '@/types'
 import AIPanel from './AIPanel'
 import WordImportPanel from './WordImportPanel'
@@ -45,21 +45,14 @@ export default function Sidebar({
   versions, onLoadVersion, onDeleteVersion,
   isSaving, documentCount,
 }: SidebarProps) {
-  const [defaultSuffix, setDefaultSuffix] = useState('/BHXH-CL')
   const [showHistory, setShowHistory] = useState(false)
+  const historyRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    setDefaultSuffix(localStorage.getItem('doc-default-suffix') || '/BHXH-CL')
-  }, [])
-
-  function saveDefaultSuffix() {
-    localStorage.setItem('doc-default-suffix', defaultSuffix)
-  }
-
-  function applyDefaultSuffix() {
-    const numPart = state.docNumber.split('/')[0].trim()
-    dispatch({ type: 'SET_FIELD', field: 'docNumber', value: numPart ? `${numPart}${defaultSuffix}` : defaultSuffix })
-  }
+    if (showHistory && historyRef.current) {
+      historyRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [showHistory])
 
   const set = (field: keyof DocumentState) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -76,13 +69,14 @@ export default function Sidebar({
       dispatch({ type: 'SET_FIELD', field: 'agencyUpper', value: selectedAgency.upper })
     }
 
-    const defaults = AGENCY_DEFAULTS[value.toUpperCase().trim()]
-    if (defaults) {
-      dispatch({ type: 'SET_FIELD', field: 'location', value: defaults.location })
+    const hardcoded = AGENCY_DEFAULTS[value.toUpperCase().trim()]
+    const suffix = selectedAgency?.suffix || hardcoded?.suffix
+    const location = selectedAgency?.location || hardcoded?.location
+
+    if (location) dispatch({ type: 'SET_FIELD', field: 'location', value: location })
+    if (suffix) {
       const currentNum = state.docNumber.split('/')[0].trim()
-      dispatch({ type: 'SET_FIELD', field: 'docNumber', value: currentNum ? `${currentNum}${defaults.suffix}` : defaults.suffix })
-    } else if (selectedAgency?.location) {
-      dispatch({ type: 'SET_FIELD', field: 'location', value: selectedAgency.location })
+      dispatch({ type: 'SET_FIELD', field: 'docNumber', value: currentNum ? `${currentNum}${suffix}` : suffix })
     }
   }
 
@@ -111,28 +105,6 @@ export default function Sidebar({
               ))}
             </select>
           </Field>
-          <Field label="Ký hiệu văn bản (mặc định)">
-            <input
-              value={defaultSuffix}
-              onChange={e => setDefaultSuffix(e.target.value)}
-              placeholder="/BHXH-CL"
-              className={inputCls}
-            />
-          </Field>
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={saveDefaultSuffix}
-              className="flex-1 py-1.5 text-xs font-semibold bg-[#f59e0b] text-white rounded-md hover:bg-[#d97706] transition-colors"
-            >
-              Lưu mặc định
-            </button>
-            <button
-              onClick={applyDefaultSuffix}
-              className="flex-1 py-1.5 text-xs font-semibold bg-[#1a56b0] text-white rounded-md hover:bg-[#1345a0] transition-colors"
-            >
-              Áp dụng vào văn bản
-            </button>
-          </div>
           <div className="flex gap-2.5">
             <Field label="Số, ký hiệu" className="flex-1">
               <input value={state.docNumber} onChange={set('docNumber')} className={inputCls} />
@@ -175,16 +147,7 @@ export default function Sidebar({
           </Field>
         </section>
 
-        {/* 4. Nội dung */}
-        <section>
-          <SectionTitle>4. Nội dung chính</SectionTitle>
-          <textarea
-            value={state.mainContent}
-            onChange={set('mainContent')}
-            rows={6}
-            className={`${inputCls} resize-y w-full`}
-          />
-        </section>
+        {/* 4. Nội dung chính → xem bên phải màn hình */}
 
         {/* 5. Kết luận & Chữ ký */}
         <section>
@@ -230,7 +193,7 @@ export default function Sidebar({
 
         {/* Lịch sử phiên bản */}
         {showHistory && (
-          <section>
+          <section ref={historyRef}>
             <SectionTitle>Lịch sử phiên bản</SectionTitle>
             {versions.length === 0 ? (
               <p className="text-xs text-[#6b7597] text-center py-3">Chưa có phiên bản nào được lưu.</p>

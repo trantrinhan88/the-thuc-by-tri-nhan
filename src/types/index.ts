@@ -77,6 +77,7 @@ export interface Agency {
   upper: string
   main: string
   location: string
+  suffix?: string
 }
 
 export interface Signer {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DocumentState, Agency, Signer } from '@/types'
 import { useDocumentReducer } from './useDocumentReducer'
@@ -121,9 +121,25 @@ export default function DocumentEditor({
         documentCount={documentCount}
       />
 
-      {/* Workspace */}
-      <main className="flex-1 overflow-y-auto py-10 px-8 flex justify-center" style={{ background: 'radial-gradient(ellipse at 60% 40%, #d6ddf0 0%, #c8d0e8 100%)' }}>
-        <A4Preview state={state} />
+      {/* Workspace: 50% editor | 50% preview */}
+      <main className="flex-1 overflow-hidden flex" style={{ background: 'radial-gradient(ellipse at 60% 40%, #d6ddf0 0%, #c8d0e8 100%)' }}>
+        {/* Left: Nội dung chính editor */}
+        <div className="w-1/2 flex flex-col border-r border-[#c8d0e8] overflow-hidden">
+          <div className="px-5 py-3 bg-white/60 border-b border-[#c8d0e8] shrink-0">
+            <h2 className="text-sm font-bold text-[#1a56b0]">4. Nội dung chính</h2>
+          </div>
+          <textarea
+            value={state.mainContent}
+            onChange={e => dispatch({ type: 'SET_FIELD', field: 'mainContent', value: e.target.value })}
+            className="flex-1 w-full p-5 resize-none text-[0.9rem] leading-relaxed bg-white/80 focus:outline-none focus:bg-white transition-colors"
+            style={{ fontFamily: '"Times New Roman", Times, serif' }}
+            placeholder="Nhập nội dung chính của văn bản..."
+          />
+        </div>
+        {/* Right: A4 Preview */}
+        <div className="w-1/2 overflow-y-auto py-10 px-8 flex justify-center">
+          <A4Preview state={state} />
+        </div>
       </main>
 
       {/* Toast */}

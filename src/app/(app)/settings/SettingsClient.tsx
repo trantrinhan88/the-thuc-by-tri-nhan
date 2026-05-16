@@ -116,6 +116,12 @@ export default function SettingsClient({ tenantId, tenantName, isAdmin, agencies
                         placeholder="Địa danh"
                         className={inputCls}
                       />
+                      <input
+                        value={a.suffix ?? ''}
+                        onChange={e => setAgencies(prev => prev.map((x, j) => j === i ? { ...x, suffix: e.target.value } : x))}
+                        placeholder="Ký hiệu văn bản (vd: /BHXH-CL)"
+                        className={inputCls}
+                      />
                     </div>
                     <button onClick={() => setAgencies(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 mt-1">✕</button>
                   </div>
