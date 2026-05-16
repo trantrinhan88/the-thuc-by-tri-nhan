@@ -46,6 +46,7 @@ export default function Sidebar({
   isSaving, documentCount,
 }: SidebarProps) {
   const [defaultSuffix, setDefaultSuffix] = useState('/BHXH-CL')
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     setDefaultSuffix(localStorage.getItem('doc-default-suffix') || '/BHXH-CL')
@@ -90,38 +91,12 @@ export default function Sidebar({
       {/* Header */}
       <header className="px-6 py-4 bg-[#1a56b0] text-white shrink-0">
         <h1 className="text-[1.1rem] font-bold tracking-[0.01em]">📄 Thể thức văn bản</h1>
+        <p className="text-[0.78rem] opacity-80 mt-0.5">Tác giả: Trần Trí Nhân</p>
         <p className="text-[0.78rem] opacity-80 mt-0.5">Soạn thảo tự động – Chuẩn Nghị định 30/2020/NĐ-CP</p>
       </header>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#dde1ef]">
-
-        {/* 0. Cài đặt ban đầu */}
-        <section className="bg-[#fffbeb] border-[1.5px] border-[#fde68a] rounded-lg p-4">
-          <SectionTitle className="text-[#92400e] border-[#fde68a]">Cài đặt ban đầu</SectionTitle>
-          <Field label="Ký hiệu văn bản (mặc định)">
-            <input
-              value={defaultSuffix}
-              onChange={e => setDefaultSuffix(e.target.value)}
-              placeholder="/BHXH-CL"
-              className={inputCls}
-            />
-          </Field>
-          <div className="flex gap-2">
-            <button
-              onClick={saveDefaultSuffix}
-              className="flex-1 py-1.5 text-xs font-semibold bg-[#f59e0b] text-white rounded-md hover:bg-[#d97706] transition-colors"
-            >
-              Lưu mặc định
-            </button>
-            <button
-              onClick={applyDefaultSuffix}
-              className="flex-1 py-1.5 text-xs font-semibold bg-[#1a56b0] text-white rounded-md hover:bg-[#1345a0] transition-colors"
-            >
-              Áp dụng vào văn bản
-            </button>
-          </div>
-        </section>
 
         {/* 1. Thông tin cơ quan */}
         <section>
@@ -136,6 +111,28 @@ export default function Sidebar({
               ))}
             </select>
           </Field>
+          <Field label="Ký hiệu văn bản (mặc định)">
+            <input
+              value={defaultSuffix}
+              onChange={e => setDefaultSuffix(e.target.value)}
+              placeholder="/BHXH-CL"
+              className={inputCls}
+            />
+          </Field>
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={saveDefaultSuffix}
+              className="flex-1 py-1.5 text-xs font-semibold bg-[#f59e0b] text-white rounded-md hover:bg-[#d97706] transition-colors"
+            >
+              Lưu mặc định
+            </button>
+            <button
+              onClick={applyDefaultSuffix}
+              className="flex-1 py-1.5 text-xs font-semibold bg-[#1a56b0] text-white rounded-md hover:bg-[#1345a0] transition-colors"
+            >
+              Áp dụng vào văn bản
+            </button>
+          </div>
           <div className="flex gap-2.5">
             <Field label="Số, ký hiệu" className="flex-1">
               <input value={state.docNumber} onChange={set('docNumber')} className={inputCls} />
@@ -232,32 +229,36 @@ export default function Sidebar({
         </section>
 
         {/* Lịch sử phiên bản */}
-        {versions.length > 0 && (
+        {showHistory && (
           <section>
             <SectionTitle>Lịch sử phiên bản</SectionTitle>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {versions.map(v => (
-                <div key={v.id} className="flex items-center gap-2 p-2.5 border-[1.5px] border-[#dde1ef] rounded-lg">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-[#1a1f36]">
-                      {new Date(v.created_at).toLocaleString('vi-VN')}
+            {versions.length === 0 ? (
+              <p className="text-xs text-[#6b7597] text-center py-3">Chưa có phiên bản nào được lưu.</p>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {versions.map(v => (
+                  <div key={v.id} className="flex items-center gap-2 p-2.5 border-[1.5px] border-[#dde1ef] rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-[#1a1f36]">
+                        {new Date(v.created_at).toLocaleString('vi-VN')}
+                      </div>
                     </div>
+                    <button
+                      onClick={() => onLoadVersion(v.id)}
+                      className="text-xs bg-[#1a56b0] text-white px-3 py-1 rounded-md font-semibold hover:bg-[#1345a0] transition-colors"
+                    >
+                      Tải
+                    </button>
+                    <button
+                      onClick={() => onDeleteVersion(v.id)}
+                      className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-md font-semibold hover:bg-red-200 transition-colors"
+                    >
+                      Xóa
+                    </button>
                   </div>
-                  <button
-                    onClick={() => onLoadVersion(v.id)}
-                    className="text-xs bg-[#1a56b0] text-white px-3 py-1 rounded-md font-semibold hover:bg-[#1345a0] transition-colors"
-                  >
-                    Tải
-                  </button>
-                  <button
-                    onClick={() => onDeleteVersion(v.id)}
-                    className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-md font-semibold hover:bg-red-200 transition-colors"
-                  >
-                    Xóa
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
@@ -269,8 +270,23 @@ export default function Sidebar({
           <button onClick={onNewDocument} className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-sm font-semibold bg-[#ec4899] text-white hover:bg-[#db2777] transition-colors">
             <span>+</span> Văn bản mới
           </button>
+          <button
+            onClick={() => setShowHistory(v => !v)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-sm font-semibold bg-[#7c3aed] text-white hover:bg-[#6d28d9] transition-colors"
+          >
+            🕐 Lịch sử
+          </button>
+        </div>
+        <div className="flex gap-2">
           <button onClick={onSave} disabled={isSaving} className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-sm font-semibold bg-[#f59e0b] text-white hover:bg-[#d97706] disabled:opacity-60 transition-colors">
             {isSaving ? 'Đang lưu...' : '💾 Lưu phiên bản'}
+          </button>
+          <button
+            onClick={() => versions.length > 0 && onLoadVersion(versions[0].id)}
+            disabled={versions.length === 0}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-sm font-semibold bg-[#6b7597] text-white hover:bg-[#525c7a] disabled:opacity-40 transition-colors"
+          >
+            ⬆️ Tải mới nhất
           </button>
         </div>
         <button onClick={onExportDocx} className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-sm font-semibold bg-[#10b981] text-white hover:bg-[#059669] transition-colors">
