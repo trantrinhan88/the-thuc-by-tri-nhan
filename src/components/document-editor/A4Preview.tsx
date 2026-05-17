@@ -82,7 +82,9 @@ export default function A4Preview({ state }: A4PreviewProps) {
           </div>
           <div style={{ width: '45%', height: '1px', background: 'black', margin: '3px auto 5px' }} />
           <div style={{ fontSize: '13pt' }}>
-            Số: {state.docNumber || '...'}
+            Số: {state.docSymbol
+              ? `${state.docNumber || '   '}/${state.docSymbol}`
+              : (state.docNumber || '...')}
           </div>
           {isCongVan && (
             <div style={{ fontSize: '13pt', textAlign: 'center', marginTop: '4pt' }}>
@@ -133,7 +135,7 @@ export default function A4Preview({ state }: A4PreviewProps) {
           <div style={{ marginBottom: '0.5rem' }}>
             {legalBasisLines.map((line, i) => (
               <div key={i} style={bodyStyle}>
-                {addPunctuation(`- Căn cứ ${line}`, i === legalBasisLines.length - 1)}
+                {addPunctuation(line, i === legalBasisLines.length - 1)}
               </div>
             ))}
           </div>

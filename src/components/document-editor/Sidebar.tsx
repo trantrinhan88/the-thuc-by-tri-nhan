@@ -74,10 +74,7 @@ export default function Sidebar({
     const location = selectedAgency?.location || hardcoded?.location
 
     if (location) dispatch({ type: 'SET_FIELD', field: 'location', value: location })
-    if (suffix) {
-      const currentNum = state.docNumber.split('/')[0].trim()
-      dispatch({ type: 'SET_FIELD', field: 'docNumber', value: currentNum ? `${currentNum}${suffix}` : suffix })
-    }
+    if (suffix) dispatch({ type: 'SET_FIELD', field: 'docSymbol', value: suffix })
   }
 
   return (
@@ -106,13 +103,16 @@ export default function Sidebar({
             </select>
           </Field>
           <div className="flex gap-2.5">
-            <Field label="Số, ký hiệu" className="flex-1">
-              <input value={state.docNumber} onChange={set('docNumber')} className={inputCls} />
+            <Field label="Số" className="flex-1">
+              <input value={state.docNumber} onChange={set('docNumber')} className={inputCls} placeholder="12" />
             </Field>
-            <Field label="Địa danh" className="flex-1">
-              <input value={state.location} onChange={set('location')} className={inputCls} />
+            <Field label="Ký hiệu" className="flex-1">
+              <input value={state.docSymbol} onChange={set('docSymbol')} className={inputCls} placeholder="/BHXH-CL" />
             </Field>
           </div>
+          <Field label="Địa danh">
+            <input value={state.location} onChange={set('location')} className={inputCls} />
+          </Field>
           <Field label="Ngày tháng năm">
             <input type="date" value={state.date} onChange={set('date')} className={inputCls} />
           </Field>

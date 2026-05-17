@@ -118,7 +118,10 @@ export async function exportDocx(state: DocumentState) {
                 }),
                 emptyLine(),
                 new Paragraph({ alignment: AlignmentType.CENTER, children: [
-                  new TextRun({ text: `Số: ${state.docNumber || '...'}`, font: 'Times New Roman', size: 26 }),
+                  new TextRun({
+                    text: `Số: ${state.docSymbol ? `${state.docNumber || '   '}/${state.docSymbol}` : (state.docNumber || '...')}`,
+                    font: 'Times New Roman', size: 26,
+                  }),
                 ]}),
                 ...(isCongVan ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [
                   new TextRun({ text: `V/v ${state.docSummary}`, font: 'Times New Roman', size: 26 }),
@@ -172,7 +175,7 @@ export async function exportDocx(state: DocumentState) {
           alignment: AlignmentType.BOTH,
           indent: bodyIndent,
           children: [
-            new TextRun({ text: addPunctuation(`- Căn cứ ${line}`, i === legalBasisLines.length - 1), font: 'Times New Roman', size: 28 }),
+            new TextRun({ text: addPunctuation(line, i === legalBasisLines.length - 1), font: 'Times New Roman', size: 28 }),
           ],
         })),
 

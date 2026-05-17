@@ -5,6 +5,7 @@ export interface DocumentState {
   agencyUpper: string
   agencyMain: string
   docNumber: string
+  docSymbol: string
   location: string
   date: string
   docSummary: string
@@ -23,6 +24,7 @@ export const DEFAULT_DOCUMENT_STATE: DocumentState = {
   agencyUpper: 'BẢO HIỂM XÃ HỘI TỈNH ĐỒNG THÁP',
   agencyMain: 'BẢO HIỂM XÃ HỘI CƠ SỞ CAO LÃNH',
   docNumber: '',
+  docSymbol: '',
   location: 'Cao Lãnh',
   date: '',
   docSummary: '',
