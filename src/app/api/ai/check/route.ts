@@ -29,47 +29,38 @@ function buildPrompt(doc: DocumentState): string {
     ['Kính gửi / Gửi đến', doc.recipient],
     ['Căn cứ pháp lý', doc.legalBasis],
     ['Đặt vấn đề', doc.issueStatement],
-    ['Nội dung chính', doc.mainContent.substring(0, 1000)],
+    ['Nội dung chính', doc.mainContent.substring(0, 4000)],
     ['Kết luận', doc.conclusion],
-  ].filter(([, v]) => v?.trim()).map(([k, v]) => `${k}: ${v}`).join('\n')
+  ].filter(([, v]) => v?.trim()).map(([k, v]) => `--- ${k} ---\n${v}`).join('\n\n')
 
-  return `Bạn là chuyên gia ngôn ngữ tiếng Việt. Hãy kiểm tra lỗi chính tả trong các trường nội dung dưới đây.
+  return `Bạn là chuyên gia kiểm tra chính tả tiếng Việt cho văn bản hành chính nhà nước.
+
+Nhiệm vụ: Tìm các LỖI CHÍNH TẢ THỰC SỰ trong nội dung dưới đây. Chỉ báo lỗi khi TỪ BỊ VIẾT SAI so với chuẩn tiếng Việt.
+
+CÁC LOẠI LỖI CẦN TÌM:
+- Sai dấu thanh: "hòa" → "hoà", "giám" → "giám", "qủa" → "quả"
+- Sai phụ âm: "rản" → "dẫn", "giải thích" ↔ "dải thích", "nghiêng" ↔ "nghiêng"
+- Sai vần/nguyên âm: "thiếc" → "thiết", "đoàng" → "đường", "bão hiểm" → "bảo hiểm"
+- Viết thiếu chữ: "cơ quan" → "cơ quản", "thực hiên" → "thực hiện"
+- Từ sai nghĩa do lỗi gõ: "kiêm tra" → "kiểm tra", "cần cứ" → "căn cứ"
+
+KHÔNG BÁO LỖI VỚI:
+- Chữ viết tắt hành chính: BHYT, BHXH, NĐ-CP, TT-BYT, QĐ, CV, KCB, DVKT, v.v.
+- Mã văn bản: 30/2020/NĐ-CP, 26/2025/TT-BYT, 4790/QĐ-BYT, v.v.
+- Số liệu, ngày tháng, tiền tệ: 27.087.696 đồng, quý I/2026, v.v.
+- Tên riêng, tên cơ quan, địa danh: Đồng Tháp, Cao Lãnh, Bệnh viện Mắt Sài Gòn, v.v.
+- Thuật ngữ y tế, pháp lý chuyên ngành
+- Cách viết hoa đầu câu, đầu tiêu đề theo thể thức văn bản
+
+Nội dung cần kiểm tra:
 
 ${fields}
 
-Trả về JSON với định dạng:
-{"issues": [{"field": "tên trường có lỗi", "type": "error|warning", "description": "từ bị sai chính tả", "suggestion": "cách viết đúng"}]}
+Trả về JSON thuần túy (không có markdown, không có \`\`\`):
+{"issues": [{"field": "tên trường chứa lỗi", "type": "error", "description": "từ/cụm từ bị viết sai trong văn bản", "suggestion": "cách viết đúng"}]}
 
-Nếu không có lỗi chính tả: {"issues": []}
-Chỉ trả về JSON, không giải thích thêm.`
-}
-
-async function callDeepSeek(prompt: string) {
-  const res = await fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}` },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-    }),
-  })
-  const data = await res.json()
-  return JSON.parse(data.choices[0].message.content)
-}
-
-async function callOpenAI(prompt: string) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-    }),
-  })
-  const data = await res.json()
-  return JSON.parse(data.choices[0].message.content)
+Nếu không phát hiện lỗi chính tả: {"issues": []}
+CHỈ trả về JSON, không kèm giải thích hay văn bản khác.`
 }
 
 async function callGemini(prompt: string) {
@@ -84,26 +75,12 @@ async function callGemini(prompt: string) {
       }),
     }
   )
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(err.error?.message || `Lỗi Gemini API: ${res.status}`)
+  }
   const data = await res.json()
   return JSON.parse(data.candidates[0].content.parts[0].text)
-}
-
-async function callAnthropic(prompt: string) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-  const data = await res.json()
-  return JSON.parse(data.content[0].text)
 }
 
 export async function POST(request: Request) {
@@ -115,16 +92,9 @@ export async function POST(request: Request) {
     const allowed = await checkRateLimit(user.id, supabase)
     if (!allowed) return NextResponse.json({ error: 'Đã đạt giới hạn 10 lần kiểm tra hôm nay' }, { status: 429 })
 
-    const { provider, documentData }: { provider: string; documentData: DocumentState } = await request.json()
+    const { documentData }: { documentData: DocumentState } = await request.json()
     const prompt = buildPrompt(documentData)
-
-    let result
-    switch (provider) {
-      case 'openai': result = await callOpenAI(prompt); break
-      case 'gemini': result = await callGemini(prompt); break
-      case 'anthropic': result = await callAnthropic(prompt); break
-      default: result = await callDeepSeek(prompt)
-    }
+    const result = await callGemini(prompt)
 
     return NextResponse.json(result)
   } catch (e: unknown) {

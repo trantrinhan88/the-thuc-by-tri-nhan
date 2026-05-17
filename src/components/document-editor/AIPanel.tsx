@@ -3,21 +3,11 @@
 import { useState } from 'react'
 import { DocumentState, AIIssue } from '@/types'
 
-type Provider = 'deepseek' | 'openai' | 'gemini' | 'anthropic'
-
-const PROVIDERS: { value: Provider; label: string; color: string }[] = [
-  { value: 'deepseek', label: 'DeepSeek', color: '#6366f1' },
-  { value: 'openai', label: 'OpenAI', color: '#10a37f' },
-  { value: 'gemini', label: 'Gemini', color: '#4285f4' },
-  { value: 'anthropic', label: 'Claude', color: '#c97d4e' },
-]
-
 interface AIPanelProps {
   documentState: DocumentState
 }
 
 export default function AIPanel({ documentState }: AIPanelProps) {
-  const [provider, setProvider] = useState<Provider>('deepseek')
   const [loading, setLoading] = useState(false)
   const [issues, setIssues] = useState<AIIssue[] | null>(null)
   const [error, setError] = useState('')
@@ -29,7 +19,7 @@ export default function AIPanel({ documentState }: AIPanelProps) {
       const res = await fetch('/api/ai/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, documentData: documentState }),
+        body: JSON.stringify({ provider: 'gemini', documentData: documentState }),
       })
       if (!res.ok) {
         const text = await res.text()
@@ -46,22 +36,6 @@ export default function AIPanel({ documentState }: AIPanelProps) {
 
   return (
     <div>
-      {/* Provider selector */}
-      <div className="flex gap-1.5 flex-wrap mb-3">
-        {PROVIDERS.map(p => (
-          <button
-            key={p.value}
-            onClick={() => setProvider(p.value)}
-            style={provider === p.value ? { background: p.color, color: 'white', borderColor: p.color } : {}}
-            className={`px-3 py-1 text-xs font-semibold rounded-md border-[1.5px] border-[#c3d0f5] transition-all ${
-              provider === p.value ? '' : 'text-[#3b52bf] hover:bg-white'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
       <button
         onClick={checkFormat}
         disabled={loading}
