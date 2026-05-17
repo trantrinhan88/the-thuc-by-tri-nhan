@@ -3,18 +3,30 @@
 import { useState } from 'react'
 import { DocumentState, AIIssue } from '@/types'
 
-interface AIPanelProps {
-  documentState: DocumentState
+const FIELD_MAP: Record<string, keyof DocumentState> = {
+  'Trích yếu': 'docSummary',
+  'Kính gửi / Gửi đến': 'recipient',
+  'Căn cứ pháp lý': 'legalBasis',
+  'Đặt vấn đề': 'issueStatement',
+  'Nội dung chính': 'mainContent',
+  'Kết luận': 'conclusion',
 }
 
-export default function AIPanel({ documentState }: AIPanelProps) {
+interface AIPanelProps {
+  documentState: DocumentState
+  onFixIssue: (field: keyof DocumentState, wrong: string, correct: string) => void
+}
+
+export default function AIPanel({ documentState, onFixIssue }: AIPanelProps) {
   const [loading, setLoading] = useState(false)
   const [issues, setIssues] = useState<AIIssue[] | null>(null)
   const [error, setError] = useState('')
+  const [fixedSet, setFixedSet] = useState<Set<number>>(new Set())
 
   async function checkFormat() {
     setLoading(true)
     setError('')
+    setFixedSet(new Set())
     try {
       const res = await fetch('/api/ai/check', {
         method: 'POST',
@@ -34,6 +46,13 @@ export default function AIPanel({ documentState }: AIPanelProps) {
     }
   }
 
+  function handleFix(index: number, issue: AIIssue) {
+    const stateField = FIELD_MAP[issue.field]
+    if (!stateField || !issue.suggestion) return
+    onFixIssue(stateField, issue.description, issue.suggestion)
+    setFixedSet(prev => new Set([...prev, index]))
+  }
+
   return (
     <div>
       <button
@@ -41,11 +60,7 @@ export default function AIPanel({ documentState }: AIPanelProps) {
         disabled={loading}
         className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold bg-[#6366f1] text-white hover:bg-[#4f46e5] disabled:opacity-60 transition-colors mb-2"
       >
-        {loading ? (
-          <span className="animate-spin">⏳</span>
-        ) : (
-          <span>🔍</span>
-        )}
+        {loading ? <span className="animate-spin">⏳</span> : <span>🔍</span>}
         {loading ? 'Đang kiểm tra...' : 'Kiểm tra lỗi chính tả'}
       </button>
 
@@ -72,18 +87,41 @@ export default function AIPanel({ documentState }: AIPanelProps) {
               {issues.map((issue, i) => (
                 <div
                   key={i}
-                  className={`flex gap-2 items-start p-2 rounded-md border-[1.5px] text-xs ${
+                  className={`flex gap-2 items-start p-2 rounded-md border-[1.5px] text-xs transition-opacity ${
+                    fixedSet.has(i) ? 'opacity-50' : ''
+                  } ${
                     issue.type === 'error'
                       ? 'border-red-200 bg-red-50'
                       : 'border-yellow-200 bg-yellow-50'
                   }`}
                 >
-                  <span className="shrink-0 text-base mt-0.5">{issue.type === 'error' ? '🔴' : '⚠️'}</span>
-                  <div>
+                  <span className="shrink-0 text-base mt-0.5">
+                    {fixedSet.has(i) ? '✅' : issue.type === 'error' ? '🔴' : '⚠️'}
+                  </span>
+                  <div className="flex-1 min-w-0">
                     <div className="font-bold text-[#374151] mb-0.5">{issue.field}</div>
-                    <div className="text-[#6b7280] leading-snug">{issue.description}</div>
+                    <div className="leading-snug">
+                      <mark className="bg-yellow-200 text-red-700 rounded px-0.5 not-italic font-medium">
+                        {issue.description}
+                      </mark>
+                    </div>
                     {issue.suggestion && (
-                      <div className="mt-1 italic text-[#059669]">Gợi ý: {issue.suggestion}</div>
+                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                        <span className="italic text-[#059669]">→ {issue.suggestion}</span>
+                        {FIELD_MAP[issue.field] && (
+                          <button
+                            onClick={() => handleFix(i, issue)}
+                            disabled={fixedSet.has(i)}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors shrink-0 ${
+                              fixedSet.has(i)
+                                ? 'bg-green-100 text-green-700 cursor-default'
+                                : 'bg-[#1a56b0] text-white hover:bg-[#1345a0]'
+                            }`}
+                          >
+                            {fixedSet.has(i) ? '✓ Đã sửa' : 'Sửa'}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

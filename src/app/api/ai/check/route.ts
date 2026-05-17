@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { DocumentState } from '@/types'
 
-const RATE_LIMIT = 10
+const RATE_LIMIT = 100
 
 async function checkRateLimit(userId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
   const today = new Date().toISOString().split('T')[0]

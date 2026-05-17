@@ -168,7 +168,7 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
 
       {/* Prompt */}
       <div>
-        <label className="block text-[0.78rem] font-semibold text-[#6b7597] mb-1">Yêu cầu gợi ý nội dung</label>
+        <label className="block text-[0.78rem] font-semibold text-[#6b7597] mb-1">Nhập yêu cầu</label>
         <textarea
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
@@ -198,7 +198,7 @@ export default function WordImportPanel({ onApply }: WordImportPanelProps) {
       {result && (
         <div className="bg-white border-[1.5px] border-[#c3d0f5] rounded-lg overflow-hidden">
           <div className="bg-[#f0f4ff] px-3 py-2 flex justify-between items-center border-b border-[#dde4f5]">
-            <span className="text-xs font-bold text-[#3b52bf]">Kết quả gợi ý</span>
+            <span className="text-xs font-bold text-[#3b52bf]">Trả lời yêu cầu</span>
             <div className="flex gap-1.5">
               <button
                 onClick={handleCopy}

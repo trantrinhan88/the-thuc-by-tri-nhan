@@ -190,7 +190,13 @@ export default function Sidebar({
         {/* 6. AI Kiểm tra */}
         <section className="bg-[#f0f4ff] border-[1.5px] border-[#c3d0f5] rounded-lg p-4">
           <SectionTitle className="text-[#3b52bf] border-[#c3d0f5]">6. Kiểm tra lỗi chính tả (AI)</SectionTitle>
-          <AIPanel documentState={state} />
+          <AIPanel
+            documentState={state}
+            onFixIssue={(field, wrong, correct) => {
+              const cur = (state[field] as string) || ''
+              dispatch({ type: 'SET_FIELD', field, value: cur.replaceAll(wrong, correct) })
+            }}
+          />
         </section>
 
         {/* 7. Import Word & Gợi ý AI */}
