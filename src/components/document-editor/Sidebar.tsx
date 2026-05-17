@@ -54,6 +54,16 @@ export default function Sidebar({
     }
   }, [showHistory])
 
+  // Auto-fill docSymbol on mount when it's empty (new document)
+  useEffect(() => {
+    if (state.docSymbol || agencies.length === 0) return
+    const matched = agencies.find(a => a.main === state.agencyMain)
+    const hardcoded = AGENCY_DEFAULTS[state.agencyMain.toUpperCase().trim()]
+    const suffix = matched?.suffix || hardcoded?.suffix
+    if (suffix) dispatch({ type: 'SET_FIELD', field: 'docSymbol', value: suffix })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agencies])
+
   const set = (field: keyof DocumentState) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => dispatch({ type: 'SET_FIELD', field, value: e.target.value })
