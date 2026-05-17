@@ -1,7 +1,7 @@
 'use client'
 
 import { Dispatch, useEffect, useRef, useState } from 'react'
-import { DocumentState, DocType, Agency, Signer } from '@/types'
+import { DocumentState, DocType, Agency, Signer, AIIssue } from '@/types'
 import AIPanel from './AIPanel'
 import WordImportPanel from './WordImportPanel'
 
@@ -23,6 +23,7 @@ interface SidebarProps {
   onDeleteVersion: (id: string) => void
   isSaving: boolean
   documentCount: number
+  onIssuesChange?: (issues: AIIssue[]) => void
 }
 
 const AGENCY_DEFAULTS: Record<string, { suffix: string; location: string }> = {
@@ -43,7 +44,7 @@ export default function Sidebar({
   state, dispatch, agencies, signers,
   onSave, onNewDocument, onExportDocx,
   versions, onLoadVersion, onDeleteVersion,
-  isSaving, documentCount,
+  isSaving, documentCount, onIssuesChange,
 }: SidebarProps) {
   const [showHistory, setShowHistory] = useState(false)
   const historyRef = useRef<HTMLElement>(null)
@@ -196,6 +197,7 @@ export default function Sidebar({
               const cur = (state[field] as string) || ''
               dispatch({ type: 'SET_FIELD', field, value: cur.replaceAll(wrong, correct) })
             }}
+            onIssuesChange={onIssuesChange}
           />
         </section>
 

@@ -19,9 +19,26 @@ const isHeadingLine = (line: string): boolean =>
 
 interface A4PreviewProps {
   state: DocumentState
+  highlightWords?: string[]
 }
 
-export default function A4Preview({ state }: A4PreviewProps) {
+function renderHighlighted(text: string, words: string[]): React.ReactNode {
+  if (!words.length) return text
+  const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const regex = new RegExp(`(${escaped.join('|')})`, 'g')
+  const parts = text.split(regex)
+  return (
+    <>
+      {parts.map((part, i) =>
+        words.includes(part)
+          ? <mark key={i} style={{ background: '#fef08a', color: '#b91c1c', borderRadius: '2px', padding: '0 1px' }}>{part}</mark>
+          : part
+      )}
+    </>
+  )
+}
+
+export default function A4Preview({ state, highlightWords = [] }: A4PreviewProps) {
   const isCongVan = state.docType === 'cong-van'
   const docTypeTitle = DOC_TYPE_TITLES[state.docType]
   const isDeputy = /phó/i.test(state.signPosition)
@@ -135,7 +152,7 @@ export default function A4Preview({ state }: A4PreviewProps) {
           <div style={{ marginBottom: '0.5rem' }}>
             {legalBasisLines.map((line, i) => (
               <div key={i} style={bodyStyle}>
-                {addPunctuation(line, i === legalBasisLines.length - 1)}
+                {renderHighlighted(addPunctuation(line, i === legalBasisLines.length - 1), highlightWords)}
               </div>
             ))}
           </div>
@@ -144,7 +161,7 @@ export default function A4Preview({ state }: A4PreviewProps) {
         {/* Đặt vấn đề */}
         {state.issueStatement && (
           <div style={{ ...bodyStyle, marginBottom: '0.5rem', ...(isHeadingLine(state.issueStatement) ? { fontWeight: 'bold' } : {}) }}>
-            {state.issueStatement}
+            {renderHighlighted(state.issueStatement, highlightWords)}
           </div>
         )}
 
@@ -152,7 +169,9 @@ export default function A4Preview({ state }: A4PreviewProps) {
         {mainContentLines.length > 0 && (
           <div style={{ marginBottom: '0.5rem' }}>
             {mainContentLines.map((line, i) => (
-              <div key={i} style={{ ...bodyStyle, ...(isHeadingLine(line) ? { fontWeight: 'bold' } : {}) }}>{line}</div>
+              <div key={i} style={{ ...bodyStyle, ...(isHeadingLine(line) ? { fontWeight: 'bold' } : {}) }}>
+                {renderHighlighted(line, highlightWords)}
+              </div>
             ))}
           </div>
         )}
@@ -160,7 +179,7 @@ export default function A4Preview({ state }: A4PreviewProps) {
         {/* Kết luận */}
         {state.conclusion && (
           <div style={{ ...bodyStyle, marginBottom: '0.5rem', ...(isHeadingLine(state.conclusion) ? { fontWeight: 'bold' } : {}) }}>
-            {state.conclusion}
+            {renderHighlighted(state.conclusion, highlightWords)}
           </div>
         )}
       </div>

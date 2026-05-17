@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DocumentState, Agency, Signer } from '@/types'
+import { DocumentState, Agency, Signer, AIIssue } from '@/types'
 import { useDocumentReducer } from './useDocumentReducer'
 import Sidebar from './Sidebar'
 import A4Preview from './A4Preview'
@@ -37,6 +37,7 @@ export default function DocumentEditor({
   const [versions, setVersions] = useState<DocVersion[]>(initialVersions)
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState('')
+  const [aiIssues, setAiIssues] = useState<AIIssue[]>([])
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const currentDocIdRef = useRef<string | undefined>(documentId)
 
@@ -119,6 +120,7 @@ export default function DocumentEditor({
         onDeleteVersion={handleDeleteVersion}
         isSaving={isSaving}
         documentCount={documentCount}
+        onIssuesChange={setAiIssues}
       />
 
       {/* Workspace: 50% editor | 50% preview */}
@@ -138,7 +140,7 @@ export default function DocumentEditor({
         </div>
         {/* Right: A4 Preview */}
         <div className="w-1/2 overflow-y-auto py-10 px-8 flex justify-center">
-          <A4Preview state={state} />
+          <A4Preview state={state} highlightWords={aiIssues.map(i => i.description).filter(d => d && d.length >= 2 && d.length <= 60)} />
         </div>
       </main>
 

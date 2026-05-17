@@ -15,9 +15,10 @@ const FIELD_MAP: Record<string, keyof DocumentState> = {
 interface AIPanelProps {
   documentState: DocumentState
   onFixIssue: (field: keyof DocumentState, wrong: string, correct: string) => void
+  onIssuesChange?: (issues: AIIssue[]) => void
 }
 
-export default function AIPanel({ documentState, onFixIssue }: AIPanelProps) {
+export default function AIPanel({ documentState, onFixIssue, onIssuesChange }: AIPanelProps) {
   const [loading, setLoading] = useState(false)
   const [issues, setIssues] = useState<AIIssue[] | null>(null)
   const [error, setError] = useState('')
@@ -27,6 +28,7 @@ export default function AIPanel({ documentState, onFixIssue }: AIPanelProps) {
     setLoading(true)
     setError('')
     setFixedSet(new Set())
+    onIssuesChange?.([])
     try {
       const res = await fetch('/api/ai/check', {
         method: 'POST',
@@ -38,7 +40,9 @@ export default function AIPanel({ documentState, onFixIssue }: AIPanelProps) {
         throw new Error(text)
       }
       const data = await res.json()
-      setIssues(data.issues || [])
+      const found: AIIssue[] = data.issues || []
+      setIssues(found)
+      onIssuesChange?.(found)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Có lỗi khi kiểm tra')
     } finally {

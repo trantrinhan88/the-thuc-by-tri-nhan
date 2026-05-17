@@ -35,29 +35,33 @@ function buildPrompt(doc: DocumentState): string {
 
   return `Bạn là chuyên gia kiểm tra chính tả tiếng Việt cho văn bản hành chính nhà nước.
 
-Nhiệm vụ: Tìm các LỖI CHÍNH TẢ THỰC SỰ trong nội dung dưới đây. Chỉ báo lỗi khi TỪ BỊ VIẾT SAI so với chuẩn tiếng Việt.
+Nhiệm vụ: Tìm các LỖI CHÍNH TẢ THỰC SỰ trong nội dung dưới đây. Chỉ báo lỗi khi TỪ BỊ VIẾT SAI ÂM/VẦN/DẤU so với chuẩn tiếng Việt.
 
-CÁC LOẠI LỖI CẦN TÌM:
-- Sai dấu thanh: "hòa" → "hoà", "giám" → "giám", "qủa" → "quả"
-- Sai phụ âm: "rản" → "dẫn", "giải thích" ↔ "dải thích", "nghiêng" ↔ "nghiêng"
-- Sai vần/nguyên âm: "thiếc" → "thiết", "đoàng" → "đường", "bão hiểm" → "bảo hiểm"
-- Viết thiếu chữ: "cơ quan" → "cơ quản", "thực hiên" → "thực hiện"
-- Từ sai nghĩa do lỗi gõ: "kiêm tra" → "kiểm tra", "cần cứ" → "căn cứ"
+CÁC LOẠI LỖI CẦN TÌM (chỉ lỗi âm/vần/dấu, không phải hoa/thường):
+- Sai dấu thanh: "qủa" → "quả", "bão hiểm" → "bảo hiểm", "lựa chọng" → "lựa chọn"
+- Sai phụ âm đầu: "dải thích" → "giải thích", "rẫn" → "dẫn", "xác nhận" ↔ "sác nhận"
+- Sai vần/nguyên âm: "thiếc" → "thiết", "đoàng" → "đường", "thực hiên" → "thực hiện"
+- Viết thiếu/thừa chữ: "cơ quản" → "cơ quan", "kiêm tra" → "kiểm tra", "cần cứ" → "căn cứ"
 
-KHÔNG BÁO LỖI VỚI:
-- Chữ viết tắt hành chính: BHYT, BHXH, NĐ-CP, TT-BYT, QĐ, CV, KCB, DVKT, v.v.
+KHÔNG BÁO LỖI VỚI (bắt buộc bỏ qua):
+- Viết hoa/viết thường: "công văn", "thông tư", "thông báo", "bảo hiểm xã hội" viết thường KHÔNG phải lỗi
+- Chữ viết tắt: BHYT, BHXH, NĐ-CP, TT-BYT, QĐ, CV, KCB, DVKT, v.v.
 - Mã văn bản: 30/2020/NĐ-CP, 26/2025/TT-BYT, 4790/QĐ-BYT, v.v.
-- Số liệu, ngày tháng, tiền tệ: 27.087.696 đồng, quý I/2026, v.v.
+- Số liệu, ngày tháng, tiền tệ, tỷ lệ phần trăm
 - Tên riêng, tên cơ quan, địa danh: Đồng Tháp, Cao Lãnh, Bệnh viện Mắt Sài Gòn, v.v.
 - Thuật ngữ y tế, pháp lý chuyên ngành
-- Cách viết hoa đầu câu, đầu tiêu đề theo thể thức văn bản
+
+YÊU CẦU VỀ ĐỊNH DẠNG KẾT QUẢ (bắt buộc):
+- "description": PHẢI là từ hoặc cụm từ NGẮN (tối đa 5 từ) bị viết sai, trích nguyên văn từ văn bản. KHÔNG được trả về cả câu hoặc đoạn văn dài.
+- "suggestion": cách viết đúng ngắn gọn tương đương với description (cùng số từ)
+- Nếu không tìm được từ cụ thể bị sai, KHÔNG báo lỗi đó.
 
 Nội dung cần kiểm tra:
 
 ${fields}
 
 Trả về JSON thuần túy (không có markdown, không có \`\`\`):
-{"issues": [{"field": "tên trường chứa lỗi", "type": "error", "description": "từ/cụm từ bị viết sai trong văn bản", "suggestion": "cách viết đúng"}]}
+{"issues": [{"field": "tên trường chứa lỗi", "type": "error", "description": "từ/cụm từ ngắn bị viết sai", "suggestion": "cách viết đúng ngắn gọn"}]}
 
 Nếu không phát hiện lỗi chính tả: {"issues": []}
 CHỈ trả về JSON, không kèm giải thích hay văn bản khác.`
