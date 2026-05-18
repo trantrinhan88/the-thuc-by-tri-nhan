@@ -40,6 +40,7 @@ export default function DocumentEditor({
   const [aiIssues, setAiIssues] = useState<AIIssue[]>([])
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const currentDocIdRef = useRef<string | undefined>(documentId)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-save debounce 1.5s
   useEffect(() => {
@@ -105,6 +106,19 @@ export default function DocumentEditor({
     await exportDocx(state)
   }
 
+  function handleWordDoubleClick(word: string) {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const text = textarea.value
+    const index = text.indexOf(word)
+    if (index === -1) return
+    textarea.focus()
+    textarea.setSelectionRange(index, index + word.length)
+    const textBefore = text.substring(0, index)
+    const linesBefore = (textBefore.match(/\n/g) || []).length
+    textarea.scrollTop = Math.max(0, linesBefore * 24 - textarea.clientHeight / 3)
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar
@@ -131,6 +145,7 @@ export default function DocumentEditor({
             <h2 className="text-sm font-bold text-[#1a56b0]">4. Nội dung chính</h2>
           </div>
           <textarea
+            ref={textareaRef}
             value={state.mainContent}
             onChange={e => dispatch({ type: 'SET_FIELD', field: 'mainContent', value: e.target.value })}
             className="flex-1 w-full p-5 resize-none text-[0.9rem] leading-relaxed bg-white/80 focus:outline-none focus:bg-white transition-colors"
@@ -140,7 +155,7 @@ export default function DocumentEditor({
         </div>
         {/* Right: A4 Preview */}
         <div className="w-1/2 overflow-y-auto py-10 px-8 flex justify-center">
-          <A4Preview state={state} highlightWords={aiIssues.map(i => i.description).filter(d => d && d.length >= 2 && d.length <= 60)} />
+          <A4Preview state={state} highlightWords={aiIssues.map(i => i.description).filter(d => d && d.length >= 2 && d.length <= 60)} onWordDoubleClick={handleWordDoubleClick} />
         </div>
       </main>
 

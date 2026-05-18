@@ -60,7 +60,7 @@ Từ bình dân, khẩu ngữ, địa phương hoặc nhầm lẫn từ gần â
 - "field": tên trường chứa lỗi (một trong: Trích yếu / Kính gửi / Gửi đến / Căn cứ pháp lý / Đặt vấn đề / Nội dung chính / Kết luận)
 - "type": "error" cho nhóm 1 và nhóm 2
 - "description": cụm từ SAI trích nguyên văn từ văn bản, NGẮN tối đa 5 từ — KHÔNG trả về cả câu/đoạn văn
-- "suggestion": cụm từ ĐÚNG ngắn gọn tương đương kèm lý do ngắn, ví dụ: "xử lý (không phải 'sử lý')"
+- "suggestion": cụm từ ĐÚNG thay thế, ngắn gọn, ví dụ: "xử lý"
 - Nếu không xác định được từ cụ thể bị sai → KHÔNG báo lỗi đó
 
 ## Nội dung cần kiểm tra:
