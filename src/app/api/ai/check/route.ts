@@ -33,40 +33,35 @@ function buildPrompt(doc: DocumentState): string {
     ['Kết luận', doc.conclusion],
   ].filter(([, v]) => v?.trim()).map(([k, v]) => `--- ${k} ---\n${v}`).join('\n\n')
 
-  return `Bạn là chuyên gia kiểm tra văn bản hành chính nhà nước Việt Nam.
-Nhiệm vụ: Rà soát và phát hiện LỖI CHÍNH TẢ TIẾNG VIỆT trong văn bản sau.
+  return `Bạn là Chuyên viên Kiểm soát Văn bản Hành chính với tính cách cực kỳ cẩn thận và nghiêm túc. Nhiệm vụ của bạn là rà soát toàn bộ văn bản công vụ dưới đây để phát hiện hai nhóm lỗi sau:
 
-## QUY TẮC KIỂM TRA
+## NHÓM 1 — LỖI CHÍNH TẢ VÀ GÕ MÁY
+Nhầm dấu hỏi/ngã, sai nguyên âm đôi, thừa/thiếu ký tự, đặt sai dấu câu:
+- Sai phụ âm đầu (d/gi, ch/tr, s/x, l/n): "dải thích" → "giải thích", "cần cứ" → "căn cứ"
+- Sai vần/nguyên âm (ăn/ân, ơn/on, iêu/iu): "thực hiên" → "thực hiện", "thiếc" → "thiết"
+- Sai thanh điệu hỏi/ngã: "qủa" → "quả", "bão hiểm" → "bảo hiểm", "mẩu" → "mẫu"
+- Thừa/thiếu dấu phụ (ă/a, ơ/o, ê/e, ô/o, ư/u, đ/d): "cơ quản" → "cơ quan"
 
-**1. Lỗi chính tả thuần túy:**
-- Sai phụ âm đầu: d/gi/z, ch/tr, s/x, l/n, r/d/gi — ví dụ: "dải thích" → "giải thích", "cần cứ" → "căn cứ"
-- Sai vần: ao/au, ưu/ươu, iêu/iu, ăn/ân, ơn/on — ví dụ: "thực hiên" → "thực hiện", "thiếc" → "thiết"
-- Sai thanh điệu (hỏi/ngã): "ẩn/ẫn", "mẩu/mẫu" — ví dụ: "qủa" → "quả", "bão hiểm" → "bảo hiểm"
-- Thiếu hoặc thừa dấu phụ: ă/a, ơ/o, ê/e, ô/o, ư/u, đ/d — ví dụ: "cơ quản" → "cơ quan"
-
-**2. Lỗi dùng từ sai trong văn bản hành chính:**
+## NHÓM 2 — LỖI DÙNG TỪ KHÔNG PHÙ HỢP VĂN PHONG HÀNH CHÍNH
+Từ bình dân, khẩu ngữ, địa phương hoặc nhầm lẫn từ gần âm:
 - Nhầm từ đồng âm: "tham quan" ≠ "thăm quan", "chín muồi" ≠ "chín mùi"
-- Dùng từ không chuẩn hành chính: "kiêm tra" → "kiểm tra", "dự thão" → "dự thảo"
-- Lẫn lộn từ gần âm: "khoản/khoảng", "điều/điếu", "phải/phãi"
-
-**3. Lỗi viết hoa không đúng quy định (Nghị định 30/2020/NĐ-CP):**
-- Tên cơ quan, tổ chức nhà nước phải viết hoa chữ cái đầu mỗi từ
-- Chức danh, chức vụ đứng trước tên người phải viết hoa
-- Địa danh hành chính phải viết hoa
+- Dùng từ sai chuẩn hành chính: "sử lý" → "xử lý", "sản suất" → "sản xuất", "dự thão" → "dự thảo"
+- Lẫn lộn từ gần âm: "khoản/khoảng", "điều/điếu", "tham mưu/thăm mưu"
+- Từ khẩu ngữ/địa phương không dùng trong văn bản chính thức
 
 ## KHÔNG BÁO LỖI VỚI (bắt buộc bỏ qua):
-- Chữ viết tắt: BHYT, BHXH, NĐ-CP, TT-BYT, QĐ, CV, KCB, DVKT, v.v.
+- Chữ viết tắt chuẩn: BHYT, BHXH, NĐ-CP, TT-BYT, QĐ, CV, KCB, DVKT, v.v.
 - Mã văn bản, số hiệu: 30/2020/NĐ-CP, 26/2025/TT-BYT, 4790/QĐ-BYT
-- Số liệu, ngày tháng, tiền tệ, tỷ lệ phần trăm
+- Số liệu, ngày tháng, tiền tệ, phần trăm
 - Thuật ngữ y tế, pháp lý chuyên ngành đã chuẩn
-- Các từ thông thường viết thường trong câu (không phải tên riêng): "công văn", "thông tư", "báo cáo" viết thường KHÔNG phải lỗi khi đứng trong câu bình thường
+- Viết hoa/thường của từ thông dụng trong câu ("công văn", "thông tư", "báo cáo" KHÔNG phải lỗi)
 
-## YÊU CẦU ĐỊNH DẠNG KẾT QUẢ (bắt buộc):
+## YÊU CẦU ĐỊNH DẠNG JSON (bắt buộc):
 - "field": tên trường chứa lỗi (một trong: Trích yếu / Kính gửi / Gửi đến / Căn cứ pháp lý / Đặt vấn đề / Nội dung chính / Kết luận)
-- "type": "error" cho lỗi chính tả/dùng từ, "warning" cho lỗi viết hoa
-- "description": PHẢI là từ hoặc cụm từ NGẮN (tối đa 5 từ) trích nguyên văn từ văn bản. KHÔNG trả về cả câu hay đoạn văn.
-- "suggestion": cách viết đúng ngắn gọn tương đương (cùng số từ với description)
-- Nếu không xác định được từ cụ thể bị sai, KHÔNG báo lỗi đó.
+- "type": "error" cho nhóm 1 và nhóm 2
+- "description": cụm từ SAI trích nguyên văn từ văn bản, NGẮN tối đa 5 từ — KHÔNG trả về cả câu/đoạn văn
+- "suggestion": cụm từ ĐÚNG ngắn gọn tương đương kèm lý do ngắn, ví dụ: "xử lý (không phải 'sử lý')"
+- Nếu không xác định được từ cụ thể bị sai → KHÔNG báo lỗi đó
 
 ## Nội dung cần kiểm tra:
 
